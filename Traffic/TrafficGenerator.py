@@ -13,6 +13,7 @@ class TrafficGenerator(threading.Thread):
         # Setup socket
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)   # todo: Maybe remove this for production?
         self.socket.settimeout(0.1) #todo what does this do?
 
         # Create meaningless data for desired MTU size
