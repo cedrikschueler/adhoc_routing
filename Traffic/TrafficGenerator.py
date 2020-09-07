@@ -16,9 +16,20 @@ class TrafficGenerator(threading.Thread):
         self.socket.settimeout(0.1) #todo what does this do?
 
         # Create meaningless data for desired MTU size
-        self.data = bytearray([0 for x in range(0,MTU_used_bit)])
+        self.data = bytearray([0 for x in range(0, MTU_used_bit)])
 
     def run(self):
-        while True:
-            self.socket.sendto(self.data, (self.destination, self.port))
-            time.sleep(self.updateInterval)
+        try:
+            while True:
+                self.socket.sendto(self.data, (self.destination, self.port))
+                time.sleep(self.updateInterval)
+        except StopIteration:
+            pass
+
+if __name__ == "__main__":
+    tg = TrafficGenerator(2.0, "<broadcast>", MTU_used_bit=1460, port=1801)
+    tg.start()
+    time.sleep(60)
+    tg.raise_exception()
+    tg.join()
+    exit()
