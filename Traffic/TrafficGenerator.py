@@ -27,7 +27,33 @@ class TrafficGenerator(threading.Thread):
         except StopIteration:
             pass
 
+class TrafficReceiver(threading.Thread):
+
+    def __init__(self, sender: str, port: int, bufferSize: int):
+        threading.Thread.__init__(self)
+        self.port = port
+        self.bufferSize = bufferSize
+        self.sender = sender
+
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.bind(("", self.port))
+
+    def run(self):
+        try:
+            while True:
+                data, addr = self.socket.recvfrom(self.bufferSize)
+                if addr[0] == self.sender:
+                    print("received message with ", len(data), " Bytes from ", addr[0])
+        except StopIteration:
+            pass
+
 if __name__ == "__main__":
+
+    tr = TrafficReceiver('192.168.178.24', 1801, 1460)
+    tr.start()
+    exit()
+
     tg = TrafficGenerator(2.0, "<broadcast>", MTU_used_bit=1460, port=1801)
     tg.start()
     time.sleep(60)
