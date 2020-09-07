@@ -1,12 +1,11 @@
-import threading
-import time
+import multiprocessing
 from gps import *
 
 
-class GNSSReceiver(threading.Thread):
+class GNSSReceiver(multiprocessing.Process):
 
     def __init__(self, updateInterval):
-        threading.Thread.__init__(self)
+        multiprocessing.Process.__init__(self)
         self.session = gps(mode=WATCH_ENABLE)
         self.updateInterval = updateInterval
         self.found_initial_fix = False

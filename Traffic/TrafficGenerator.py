@@ -1,11 +1,11 @@
-import threading
+import multiprocessing
 import socket
 import time
 
-class TrafficGenerator(threading.Thread):
+class TrafficGenerator(multiprocessing.Process):
 
     def __init__(self, targetCBR_MBits: float, destination: str, MTU_used_bit: float, port: int):
-        threading.Thread.__init__(self)
+        multiprocessing.Process.__init__(self)
         self.updateInterval = (MTU_used_bit*8)/(targetCBR_MBits*1e6)
         self.destination = destination
         self.port = port
@@ -27,10 +27,10 @@ class TrafficGenerator(threading.Thread):
         except StopIteration:
             pass
 
-class TrafficReceiver(threading.Thread):
+class TrafficReceiver(multiprocessing.Process):
 
     def __init__(self, sender: str, port: int, bufferSize: int):
-        threading.Thread.__init__(self)
+        multiprocessing.Process.__init__(self)
         self.port = port
         self.bufferSize = bufferSize
         self.sender = sender

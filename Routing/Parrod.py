@@ -34,6 +34,10 @@ class Parrod():
     def start(self):
         self.mobility.start()
         self.udp.start()
+
+    def stop(self):
+        self.mobility.terminate()
+        self.udp.terminate()
     '''
     Brain functions
     '''

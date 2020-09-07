@@ -1,13 +1,13 @@
 import socket
-import threading
+import multiprocessing
 import time
 
 ENCODING = "utf-8"
 
-class UDPManager(threading.Thread):
+class UDPManager(multiprocessing.Process):
 
     def __init__(self, port: int, buffersize=10000) -> None:
-        threading.Thread.__init__(self)
+        multiprocessing.Process.__init__(self)
         self.address = ""
         self.port = port
         self.bufferSize = buffersize
