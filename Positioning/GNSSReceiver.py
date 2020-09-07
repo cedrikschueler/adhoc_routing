@@ -30,7 +30,7 @@ class GNSSReceiver(threading.Thread):
         except StopIteration:
             pass
 
-    def get_current_data(self) -> tuple():
+    def getCurrentPosition_Sat(self) -> tuple():
         lat = None
         lon = None
         alt = None
@@ -42,10 +42,14 @@ class GNSSReceiver(threading.Thread):
             alt = self.currentData["alt"]
         return lat, lon, alt
 
+    def getCurrentPosition(self) -> tuple:
+        # todo convert to cartesian, Meanwhile use satelite system:
+        return self.getCurrentPosition_Sat()
+
 if __name__ == '__main__':
 
    gpsp = GNSSReceiver(0.1)
    gpsp.start()
    while 1:
        time.sleep(0.2)
-       print(gpsp.get_current_data())
+       print(gpsp.getCurrentPosition_Sat())
