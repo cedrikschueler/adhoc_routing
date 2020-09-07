@@ -1,17 +1,19 @@
 from Positioning import GNSSReceiver
-from Routing import UDPManager
+from Routing import UDPManager, RoutingTable
+from Messages.MultiHopChirp import MultiHopChirp
 import numpy as np
 import time
-from collections import OrderedDict
-import threading
 import sched
 
 class Parrod():
 
+    Vi: dict
+    Gateways: dict
+
     def __init__(self, config: dict, transmissionRange_m: float):
         self.txRange_m = transmissionRange_m
 
-
+        self.mhChirp = MultiHopChirp()
         self.mhChirpInterval_s = config["mhChirpInterval"]
         self.neighborReliabilityTimeout = config["neighborReliabilityTimeout"]
         self.qFctAlpha = config["qFctAlpha"]
@@ -23,10 +25,12 @@ class Parrod():
         self.predictionMethod = config["predictionMethod"]
         self.ipAddress = config["ipAddress"]
 
+        self.rt = RoutingTable()
+
         self.bcPort = config["bcPort"]
         self.bufferSize = config["bufferSize"]
         self.udp = UDPManager(self.bcPort, self.bufferSize)
-        self.subscribe(self.handleMessageWhenUp)
+        self.udp.subscribe(self.handleMessageWhenUp)
 
         self.gnssUpdateInterval = config["gnssUpdateInterval"]
         self.mobility = GNSSReceiver(self.gnssUpdateInterval)
@@ -55,7 +59,7 @@ class Parrod():
         else:
             raise Exception("No valid combination mode!")
 
-    def qFunction(self, hop: str, target: str) -> float:
+    def qFunction(self, hop: int, target: int) -> float:
         discounts = []
         discounts.append(self.qFctGamma)
         discounts.append(self.Gamma_Pos(hop))
@@ -65,7 +69,7 @@ class Parrod():
                self.qFctAlpha*self.combineDiscounts(discounts)* \
                self.Gateways[target][hop]["V"]
 
-    def getMaxValueFor(self, target: str) -> float:
+    def getMaxValueFor(self, target: int) -> float:
         res = -1000.0
         if target in self.Gateways.keys():
             for act in self.Gateways.keys():
@@ -73,7 +77,7 @@ class Parrod():
                     res = np.max(res, self.qFUnction(act, target))
         return res
 
-    def getNextHopFor(self, target: str) -> str:
+    def getNextHopFor(self, target: int) -> int:
         a = None
         res = -1000.0
 
@@ -86,10 +90,10 @@ class Parrod():
                         a = act
                 else:
                     # delete act->second
-                    self.Gateways[target].erase(act)
-        return a if a != None else "0.0.0.0"
+                    del self.Gateways[target][act]
+        return a if a != None else 0
 
-    def Gamma_Pos(self, neighbor: str, origin: str) -> float:
+    def Gamma_Pos(self, neighbor: int, origin: int = 0) -> float:
         t_elapsed_since_last_hello: float = time.time() - self.Vi[neighbor]["lastSeen"]
 
         vj = self.Vi[neighbor]["velo"]
@@ -117,9 +121,9 @@ class Parrod():
 
         t = 0.0 if (t2 >= 0.0 or (t2 < 0.0 and t1 < 0.0)) else t1
 
-        if origin != "0.0.0.0" and self.rescheduleRoutesOnTimeout and t2 >= 0.0:
+        if origin != 0 and self.rescheduleRoutesOnTimeout and t2 >= 0.0:
             self.destinationToUpdateSchedule.enter(t2, 1, lambda: self.refreshRoutingTable(origin))
-        elif origin != "0.0.0.0" and self.rescheduleRoutesOnTimeout and t2 <= 0.0 and t1 > 0.0 and t1 < 1.0:
+        elif origin != 0 and self.rescheduleRoutesOnTimeout and t2 <= 0.0 and t1 > 0.0 and t1 < 1.0:
             self.destinationToUpdateSchedule.enterabs(time.time() + t1, 1, lambda: self.refreshRoutingTable(origin))
 
         return np.min(1.0, np.sqrt(np.max(t, 0.0)/self.mhChirpInterval_s))
@@ -127,11 +131,41 @@ class Parrod():
     '''
     Chirp functions
     '''
-    def handleMessageWhenUp(self, msg, addr=""):
-        ...
+    def handleMessageWhenUp(self, msg):
+        if (len(msg) == self.mhChirp.length()):
+            msgData = self.mhChirp.deserialize(msg)
+            remainingHops = self.handleIncomingMultiHopChirp(msgData)
+            if remainingHops > 0 and self.postliminaryChecksPassed(msgData["Origin"], msgData["Hop"]):
+                msgData["Value"] = self.getMaxValueFor(msgData["Origin"])
+                msgData["CreationTime"] = time.time()
+                msgData["Hop"] = self.ipAddress
 
-    def postliminaryChecksPassed(self, origin: str, gateway: str) -> bool:
-        ...
+                # Get location
+                # Todo: What if position is not available?
+                p = self.mobility.getCurrentPosition()
+                v = self.mobility.getCurrentVelocity() # Todo: Or by differential prediction
+                msgData["X"] = p[0]
+                msgData["Y"] = p[1]
+                msgData["Z"] = p[2]
+                msgData["Vx"] = v[0]
+                msgData["Vy"] = v[1]
+                msgData["Vz"] = v[2]
+
+                msgData["GammaMob"] = self.m_Gamma_Mob
+                msgData["HopCount"] = remainingHops
+
+                self.udp.broadcastData(self.mhChirp.serialize(msgData))
+
+
+    def postliminaryChecksPassed(self, origin: int, gateway: int) -> bool:
+        if len(self.Vi) == 0:
+            return False
+        elif len(self.Vi) == 1:
+            return not (self.Vi[list(self.Vi.keys())[0]] == origin or self.Vi[list(self.Vi.keys())[0]] == gateway)
+        elif self.rt.findBestMatchingRoute(origin) != None and self.rt.findBestMatchingRoute(origin)["Gateway"] != gateway:
+            return False
+        else:
+            return True
 
     def updateGamma_Mob(self) -> None:
         exclusive = 0
@@ -156,19 +190,161 @@ class Parrod():
         self.lastSetOfNeighbors = currentSetOfNeighbors
         self.m_Gamma_Mob = np.sqrt(1 - float(exclusive)/float(merged)) if merged != 0 else 0.0
 
-    def handleIncomingMultiHopChirp(self):
-        ...
+    def handleIncomingMultiHopChirp(self, chirp: dict) -> int:
+        origin = chirp["Origin"]
+        gateway = chirp["Hop"]
+        creationTime = chirp["CreationTime"]
 
-    def refreshRoutingTable(self, origin):
-        ...
+        val = chirp["Value"]
+
+        x = chirp["X"]
+        y = chirp["Y"]
+        z = chirp["Z"]
+        vx = chirp["Vx"]
+        vy = chirp["Vy"]
+        vz = chirp["Vz"]
+
+        gamma_mob = chirp["GammaMob"]
+        squNr = chirp["SquNr"]
+
+        hopCount = chirp["HopCount"]
+
+        knownNeighbor = gateway in self.Vi.keys()
+        if knownNeighbor and origin != self.ipAddress and self.Vi[gateway]["squNr"] <= squNr:
+            # Todo: Is the following important anymore?
+            #std::map < Ipv4Address, MDPState * >::iterator
+            #stateIt = C.find(gateway);
+            #std::map < Ipv4Address, Action * >::iterator
+            #actionIt = Ad.find(gateway);
+            #if (stateIt == C.end() | | actionIt == Ad.end()) {
+            #throw;
+            #}
+            self.Vi[gateway]["lastSeen"] = time.time()
+            self.Vi[gateway]["TP"] = 0.0
+            self.Vi[gateway]["coord"] = np.array([x, y, z])
+            self.Vi[gateway]["velo"] = np.array([vx, vy, vz])
+            self.Vi[gateway]["futurePosition"] = np.array([x, y, z])
+            self.Vi[gateway]["Gamma_Mob"] = gamma_mob
+            self.Vi[gateway]["Gamma_Pos"] = self.Gamma_Pos(gateway, 0)
+            self.Vi[gateway]["squNr"] = squNr
+            #if (origin == gateway) {
+            #   nj->second->regRec();
+            #}
+        else:
+            self.Vi[gateway] = dict()
+            self.Vi[gateway]["lastSeen"] = time.time()
+            self.Vi[gateway]["TP"] = 0.0
+            self.Vi[gateway]["coord"] = np.array([x, y, z])
+            self.Vi[gateway]["velo"] = np.array([vx, vy, vz])
+            self.Vi[gateway]["futurePosition"] = np.array([x, y, z])
+            self.Vi[gateway]["Gamma_Mob"] = gamma_mob
+            self.Vi[gateway]["squNr"] = squNr
+            #if (origin == gateway) {
+            #   nj->second->regRec();
+            #}
+            self.Vi[gateway]["Gamma_Pos"] = self.Gamma_Pos(gateway, 0)
+
+        if origin == self.ipAddress:
+            #if (maxHops - hopCount == 1) {
+            #// Only count direct echo
+            #Vi.at(gateway)->regEcho(squNr);
+            #}
+            return 0
+        elif knownNeighbor and self.Vi[gateway]["squNr"] > squNr:
+            return 0
+
+        if origin not in self.Gateways.keys():
+            self.Gateways[origin] = dict()
+            self.Gateways[origin][gateway]["lastSeen"] = time.time()
+            self.Gateways[origin][gateway]["Q"] = 0.0
+            self.Gateways[origin][gateway]["squNr"] = squNr
+            self.Gateways[origin][gateway]["V"] = val
+            self.Gateways[origin][gateway]["Q"] = self.qFunction(gateway, origin)
+        else:
+            if gateway not in self.Gatewas[origin].keys():
+                self.Gateways[origin][gateway] = dict()
+                self.Gateways[origin][gateway]["lastSeen"] = time.time()
+                self.Gateways[origin][gateway]["Q"] = 0.0
+                self.Gateways[origin][gateway]["squNr"] = squNr
+                self.Gateways[origin][gateway]["V"] = val
+                self.Gateways[origin][gateway]["Q"] = self.qFunction(gateway, origin)
+            else:
+                if squNr > self.Gateways[origin][gateway]["squNr"] or (squNr == self.Gateways[origin][gateway]["squNr"] and val > self.Gateways[origin][gateway]["V"]):
+                    self.Gateways[origin][gateway]["lastSeen"] = time.time()
+                    self.Gateways[origin][gateway]["squNr"] = squNr
+                    self.Gateways[origin][gateway]["V"] = val
+                    self.Gateways[origin][gateway]["Q"] = self.qFunction(gateway, origin)
+                else:
+                    return 0
+
+        self.refreshRoutingTable(origin)
+        return hopCount - 1
+
+    def refreshRoutingTable(self, origin: int) -> None:
+        self.rt.purge()
+        self.purgeNeighbors()
+
+        route = self.rt.findBestMatchingRoute(origin)
+        bestHop = self.getNextHopFor(origin)
+
+        if route == None and bestHop == 0:
+            return
+        else:
+            if route["Gateway"] == bestHop:
+                return
+            self.rt.removeRoute(route)
+            if bestHop == 0:
+                return
+            else:
+                e = dict()
+                e["Destination"] = origin
+                e["Gateway"] = bestHop
+                e["ExpiryTime"] = time.time() + np.min(self.neighborReliabilityTimeout, self.Vi[bestHop]["Gamma_Pos"]**2 * self.mhChirpInterval_s)
+                e["Metric"] = self.Gateways[origin][bestHop]["Q"]
+
+                self.rt.addRoute(e)
 
     def purgeNeighbors(self):
-        ...
+        for target in self.Gateways.keys():
+            for act in self.Gateways[target]:
+                if time.time() - self.Gateways[target][act]["lastSeen"] > self.neighborReliabilityTimeout or self.Gamma_Pos(act) <= 0.0:
+                    del self.Gateways[target][act]
+
+        for n in self.Vi.keys():
+            useful: bool = False
+            for t in self.Gateways.keys():
+                useful = useful or n in self.Gateways[t].keys()
+            if not useful:
+                del self.Vi[n]
 
     def sendMultiHopChirp(self):
-        ...
+        chirp = dict()
+        chirp["CreationTime"] = time.time()
+        chirp["Hop"] = self.ipAddress
+        chirp["squNr"] = self.getNextSquNr()
+
+        # Get location
+        # Todo: What if position is not available?
+        p = self.mobility.getCurrentPosition()
+        v = self.mobility.getCurrentVelocity()  # Todo: Or by differential prediction
+        chirp["X"] = p[0]
+        chirp["Y"] = p[1]
+        chirp["Z"] = p[2]
+        chirp["Vx"] = v[0]
+        chirp["Vy"] = v[1]
+        chirp["Vz"] = v[2]
+
+        self.updateGamma_Mob()
+        chirp["GammaMob"] = self.m_Gamma_Mob
+        chirp["Value"] = 1.0
+        chirp["HopCount"] = self.maxHops
+
+        self.udp.broadcastData(self.mhChirp.serialize(chirp))
+
 
     '''
     Flight methods
     Not implemented. Use Mobility Prediction package instead
     '''
+
+
