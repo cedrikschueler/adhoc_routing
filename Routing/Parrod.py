@@ -7,6 +7,7 @@ import sched
 
 class Parrod():
 
+    __squNr: int = 0
     Vi: dict
     Gateways: dict
 
@@ -341,6 +342,11 @@ class Parrod():
 
         self.udp.broadcastData(self.mhChirp.serialize(chirp))
 
+    def getNextSquNr(self) -> int:
+        if not self.__squNr < 2**16 - 1:
+            self.__squNr = 0
+        self.__squNr += 1
+        return self.__squNr
 
     '''
     Flight methods
