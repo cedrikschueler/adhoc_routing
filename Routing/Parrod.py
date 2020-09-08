@@ -1,5 +1,6 @@
-from Positioning import GNSSReceiver
-from Routing import UDPManager, RoutingTable
+from Positioning.GNSSReceiver import GNSSReceiver
+from Routing.UDPManager import UDPManager
+from Routing.RoutingTable import RoutingTable
 from Messages.MultiHopChirp import MultiHopChirp
 import numpy as np
 import time
