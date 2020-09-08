@@ -39,7 +39,7 @@ class GNSSReceiver(multiprocessing.Process):
             lon = self.currentData["lon"]
         if "alt" in self.currentData.keys():
             alt = self.currentData["alt"]
-        return lat, lon, alt
+        return lat if lat else -1.0, lon if lon else -1.0, alt if alt else -1.0
 
     def getCurrentPosition(self) -> tuple:
         # todo convert to cartesian, Meanwhile use satelite system:

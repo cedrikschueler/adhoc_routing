@@ -24,7 +24,7 @@ class MultiHopChirp(RoutingMessage):
         Value - Double - Float
         HopCount - Integer - Int
 
-        @iidIddddddddi
+        @IIdIddddddddI
         '''
         fmt = "@IIdIddddddddI"
         super(MultiHopChirp, self).__init__(fmt)
