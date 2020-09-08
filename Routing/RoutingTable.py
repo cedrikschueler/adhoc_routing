@@ -31,15 +31,14 @@ class RoutingTable:
         self.ifname = ifname
 
     def purge(self):
-        for destination in self.Routes:
-            for gateway in self.Routes[destination]:
-                if self.Routes[destination][gateway]["ExpiryTime"] < time.time():
-                    #self.__del_route(destination, gateway)
-                    del self.Routes[destination][gateway]
+        for destination in list(self.Routes.keys()):
+            if self.Routes[destination]["ExpiryTime"] < time.time():
+                #self.__del_route(destination, gateway)
+                del self.Routes[destination]
 
 
     def findBestMatchingRoute(self, origin):
-        if origin in self.Routes.keys():
+        if origin in list(self.Routes.keys()):
             return self.Routes[origin]
         else:
             return None
@@ -48,7 +47,7 @@ class RoutingTable:
     def removeRoute(self, e):
         if e["Destination"] in self.Routes.keys():
             #self.__del_route(e["Destination"], e["Gateway"])
-            del self.Routes[e["Destination"]][e["Gateway"]]
+            del self.Routes[e["Destination"]]
         else:
             raise Exception("Route not available!")
 

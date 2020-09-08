@@ -13,6 +13,7 @@ class Parrod():
     Vi: dict = dict()
     Gateways: dict = dict()
     lastSetOfNeighbors:list = []
+    m_Gamma_Mob: float = 0.0
 
     def __init__(self, config: dict, transmissionRange_m: float):
         self.txRange_m = transmissionRange_m
@@ -84,7 +85,7 @@ class Parrod():
         if target in self.Gateways.keys():
             for act in self.Gateways.keys():
                 if (time.time() - self.Gateways[target][act]["lastSeen"] <= self.neighborReliabilityTimeout) and self.Gamma_Pos(act) > 0:
-                    res = np.max(res, self.qFUnction(act, target))
+                    res = max(res, self.qFunction(act, target))
         return res
 
     def getNextHopFor(self, target: int) -> int:
@@ -133,7 +134,7 @@ class Parrod():
         else:
             t1 = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
             t2 = (-b - np.sqrt(b**2 - 4*a*c))/(2*a)
-    
+
             t = 0.0 if (t2 >= 0.0 or (t2 < 0.0 and t1 < 0.0)) else t1
 
         if origin != 0 and self.rescheduleRoutesOnTimeout and t2 >= 0.0:
@@ -151,6 +152,7 @@ class Parrod():
             msgData = self.mhChirp.deserialize(msg)
             remainingHops = self.handleIncomingMultiHopChirp(msgData)
             if remainingHops > 0 and self.postliminaryChecksPassed(msgData["Origin"], msgData["Hop"]):
+                print("Received mhChirp from ", msgData["Origin"], " with p = ", (msgData["X"], msgData["Y"], msgData["Z"]), " : ", msgData["Value"])
                 msgData["Value"] = self.getMaxValueFor(msgData["Origin"])
                 msgData["CreationTime"] = time.time()
                 msgData["Hop"] = self.ipAddress
@@ -158,7 +160,8 @@ class Parrod():
                 # Get location
                 # Todo: What if position is not available?
                 p = self.mobility.getCurrentPosition()
-                v = self.mobility.getCurrentVelocity() # Todo: Or by differential prediction
+                v = self.mobility.getCurrentPosition() # Todo: Or by differential prediction
+                #v = self.mobility.getCurrentVelocity() # Todo: Or by differential prediction
                 msgData["X"] = p[0]
                 msgData["Y"] = p[1]
                 msgData["Z"] = p[2]
@@ -188,7 +191,7 @@ class Parrod():
 
         currentSetOfNeighbors = []
 
-        for it in self.Vi.keys():
+        for it in list(self.Vi.keys()):
             if time.time() - self.Vi[it]["lastSeen"] <= self.neighborReliabilityTimeout:
                 currentSetOfNeighbors.append(it)
 
@@ -277,7 +280,7 @@ class Parrod():
             self.Gateways[origin][gateway]["V"] = val
             self.Gateways[origin][gateway]["Q"] = self.qFunction(gateway, origin)
         else:
-            if gateway not in self.Gatewas[origin].keys():
+            if gateway not in self.Gateways[origin].keys():
                 self.Gateways[origin][gateway] = dict()
                 self.Gateways[origin][gateway]["lastSeen"] = time.time()
                 self.Gateways[origin][gateway]["Q"] = 0.0
