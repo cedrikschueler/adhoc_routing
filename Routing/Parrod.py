@@ -325,14 +325,14 @@ class Parrod():
                 self.rt.addRoute(e)
 
     def purgeNeighbors(self):
-        for target in self.Gateways.keys():
-            for act in self.Gateways[target]:
+        for target in list(self.Gateways.keys()):
+            for act in list(self.Gateways[target]):
                 if time.time() - self.Gateways[target][act]["lastSeen"] > self.neighborReliabilityTimeout or self.Gamma_Pos(act) <= 0.0:
                     del self.Gateways[target][act]
 
-        for n in self.Vi.keys():
+        for n in list(self.Vi.keys()):
             useful: bool = False
-            for t in self.Gateways.keys():
+            for t in list(self.Gateways.keys()):
                 useful = useful or n in self.Gateways[t].keys()
             if not useful:
                 del self.Vi[n]
