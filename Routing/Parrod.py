@@ -127,10 +127,14 @@ class Parrod():
         b = 2*(px*vx + py*vy + pz*vz)
         c = px**2 + py**2 + pz**2 - self.txRange_m**2
 
-        t1 = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
-        t2 = (-b - np.sqrt(b**2 - 4*a*c))/(2*a)
-
-        t = 0.0 if (t2 >= 0.0 or (t2 < 0.0 and t1 < 0.0)) else t1
+        t: float = 0.0
+        if a == 0:
+            t = 1.0 if c <= 0.0 else 0.0
+        else:
+            t1 = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
+            t2 = (-b - np.sqrt(b**2 - 4*a*c))/(2*a)
+    
+            t = 0.0 if (t2 >= 0.0 or (t2 < 0.0 and t1 < 0.0)) else t1
 
         if origin != 0 and self.rescheduleRoutesOnTimeout and t2 >= 0.0:
             self.destinationToUpdateSchedule.enter(t2, 1, lambda: self.refreshRoutingTable(origin))

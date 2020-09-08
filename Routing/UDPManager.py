@@ -27,11 +27,10 @@ class UDPManager(multiprocessing.Process):
     def run(self):
         try:
             while True:
-                data, addr = self.socket.recvfrom(self.bufferSize)
+                data, _ = self.socket.recvfrom(self.bufferSize)
                 if len(self.subscriptions) != 0:
                     for c in self.subscriptions:
                         c(data)
-                print("received message with ", len(data), " Bytes from ", addr)
         except StopIteration:
             pass
 
