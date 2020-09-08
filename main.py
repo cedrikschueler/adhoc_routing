@@ -11,6 +11,7 @@ def test_Experiment():
     config["historySize"]  =5
     config["rescheduleRoutesOnTimeout"] = True
     config["predictionMethod"] = "slope"
+    config["ifname"] = "wlp2s0"
     config["ipAddress"] = "192.168.178.27"
 
 

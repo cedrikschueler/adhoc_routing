@@ -32,7 +32,7 @@ class Parrod():
         self.predictionMethod = config["predictionMethod"]
         self.ipAddress = int(ipaddress.IPv4Address(config["ipAddress"]))
 
-        self.rt = RoutingTable()
+        self.rt = RoutingTable(config["ifname"])
 
         self.bcPort = config["bcPort"]
         self.bufferSize = config["bufferSize"]

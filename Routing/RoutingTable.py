@@ -27,8 +27,8 @@ class RoutingTable:
 #https://www.programcreek.com/python/?code=alexsunday%2Fpyvpn%2Fpyvpn-master%2Fsrc%2Futil.py
 
     Routes = dict()
-    def __init__(self):
-        self.ifname = "wlp2s0"
+    def __init__(self, ifname):
+        self.ifname = ifname
 
     def purge(self):
         for destination in self.Routes:
