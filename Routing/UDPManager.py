@@ -15,6 +15,7 @@ class UDPManager(multiprocessing.Process):
         self.subscriptions = []
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
     def subscribe(self, callable):
         self.subscriptions.append(callable)

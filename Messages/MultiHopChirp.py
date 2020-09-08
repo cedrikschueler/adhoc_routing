@@ -26,7 +26,7 @@ class MultiHopChirp(RoutingMessage):
 
         @iidIddddddddi
         '''
-        fmt = "@iidIddddddddi"
+        fmt = "@IIdIddddddddI"
         super(MultiHopChirp, self).__init__(fmt)
 
     def serialize(self, data: dict) -> bytearray:

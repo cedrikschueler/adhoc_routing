@@ -5,12 +5,14 @@ from Messages.MultiHopChirp import MultiHopChirp
 import numpy as np
 import time
 import sched
+import ipaddress
 
 class Parrod():
 
     __squNr: int = 0
-    Vi: dict
-    Gateways: dict
+    Vi: dict = dict()
+    Gateways: dict = dict()
+    lastSetOfNeighbors:list = []
 
     def __init__(self, config: dict, transmissionRange_m: float):
         self.txRange_m = transmissionRange_m
@@ -18,6 +20,9 @@ class Parrod():
         self.mhChirp = MultiHopChirp()
         self.mhChirpInterval_s = config["mhChirpInterval"]
         self.neighborReliabilityTimeout = config["neighborReliabilityTimeout"]
+        self.mhChirpReminder = sched.scheduler(time.time, time.sleep)
+
+
         self.qFctAlpha = config["qFctAlpha"]
         self.qFctGamma = config["qFctGamma"]
         self.maxHops = config["maxHops"]
@@ -25,7 +30,7 @@ class Parrod():
         self.rescheduleRoutesOnTimeout = config["rescheduleRoutesOnTimeout"]
         self.destinationToUpdateSchedule = sched.scheduler(time.time, time.sleep)
         self.predictionMethod = config["predictionMethod"]
-        self.ipAddress = config["ipAddress"]
+        self.ipAddress = int(ipaddress.IPv4Address(config["ipAddress"]))
 
         self.rt = RoutingTable()
 
@@ -38,8 +43,11 @@ class Parrod():
         self.mobility = GNSSReceiver(self.gnssUpdateInterval)
 
     def start(self):
+        print("Starting services")
         self.mobility.start()
         self.udp.start()
+        self.mhChirpReminder.enter(self.mhChirpInterval_s, 1, lambda: self.sendMultiHopChirp())
+        self.mhChirpReminder.run()
 
     def stop(self):
         self.mobility.terminate()
@@ -179,12 +187,12 @@ class Parrod():
             if time.time() - self.Vi[it]["lastSeen"] <= self.neighborReliabilityTimeout:
                 currentSetOfNeighbors.append(it)
 
-        for o in self.lastSetOfNeighbors.keys():
+        for o in self.lastSetOfNeighbors:
             if o in currentSetOfNeighbors:
                 exclusive += 1
             merged += 1
 
-        for n in currentSetOfNeighbors.keys():
+        for n in currentSetOfNeighbors:
             if n in self.lastSetOfNeighbors:
                 exclusive += 1
                 merged += 1
@@ -321,14 +329,16 @@ class Parrod():
 
     def sendMultiHopChirp(self):
         chirp = dict()
+        chirp["Origin"] = self.ipAddress
         chirp["CreationTime"] = time.time()
         chirp["Hop"] = self.ipAddress
-        chirp["squNr"] = self.getNextSquNr()
+        chirp["SquNr"] = self.getNextSquNr()
 
         # Get location
         # Todo: What if position is not available?
         p = self.mobility.getCurrentPosition()
-        v = self.mobility.getCurrentVelocity()  # Todo: Or by differential prediction
+        v = self.mobility.getCurrentPosition()
+        #v = self.mobility.getCurrentVelocity()  # Todo: Or by differential prediction
         chirp["X"] = p[0]
         chirp["Y"] = p[1]
         chirp["Z"] = p[2]
@@ -342,6 +352,7 @@ class Parrod():
         chirp["HopCount"] = self.maxHops
 
         self.udp.broadcastData(self.mhChirp.serialize(chirp))
+        self.mhChirpReminder.enter(self.mhChirpInterval_s, 1, lambda: self.sendMultiHopChirp())
 
     def getNextSquNr(self) -> int:
         if not self.__squNr < 2**16 - 1:

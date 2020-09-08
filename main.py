@@ -21,7 +21,7 @@ def test_Experiment():
 
     parrod = Parrod(config, 230.0)
     parrod.start()
-    time.sleep(5)
+    time.sleep(120)
     parrod.stop()
 
 
