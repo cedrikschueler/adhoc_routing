@@ -110,7 +110,8 @@ class Parrod():
         pj = self.Vi[neighbor]["coord"] + vj*t_elapsed_since_last_hello
 
         pi = self.mobility.getCurrentPosition()
-        vi = self.mobility.getCurrentVelocity()
+        vi = self.mobility.getCurrentPosition()
+        #vi = self.mobility.getCurrentVelocity()    // todo
 
         deltaP = pj - pi
         deltaV = vj - vi
@@ -136,7 +137,7 @@ class Parrod():
         elif origin != 0 and self.rescheduleRoutesOnTimeout and t2 <= 0.0 and t1 > 0.0 and t1 < 1.0:
             self.destinationToUpdateSchedule.enterabs(time.time() + t1, 1, lambda: self.refreshRoutingTable(origin))
 
-        return np.min(1.0, np.sqrt(np.max(t, 0.0)/self.mhChirpInterval_s))
+        return min(1.0, np.sqrt(max(t, 0.0)/self.mhChirpInterval_s))
 
     '''
     Chirp functions
@@ -265,6 +266,7 @@ class Parrod():
 
         if origin not in self.Gateways.keys():
             self.Gateways[origin] = dict()
+            self.Gateways[origin][gateway] = dict()
             self.Gateways[origin][gateway]["lastSeen"] = time.time()
             self.Gateways[origin][gateway]["Q"] = 0.0
             self.Gateways[origin][gateway]["squNr"] = squNr
@@ -300,16 +302,17 @@ class Parrod():
         if route == None and bestHop == 0:
             return
         else:
-            if route["Gateway"] == bestHop:
+            if route is not None and route["Gateway"] == bestHop:
                 return
-            self.rt.removeRoute(route)
+            if route is not None:
+                self.rt.removeRoute(route)
             if bestHop == 0:
                 return
             else:
                 e = dict()
                 e["Destination"] = origin
                 e["Gateway"] = bestHop
-                e["ExpiryTime"] = time.time() + np.min(self.neighborReliabilityTimeout, self.Vi[bestHop]["Gamma_Pos"]**2 * self.mhChirpInterval_s)
+                e["ExpiryTime"] = time.time() + min(self.neighborReliabilityTimeout, self.Vi[bestHop]["Gamma_Pos"]**2 * self.mhChirpInterval_s)
                 e["Metric"] = self.Gateways[origin][bestHop]["Q"]
 
                 self.rt.addRoute(e)

@@ -1,7 +1,7 @@
 from Routing.Parrod import Parrod
 import time
 
-def test_Experiment():
+def Experiment():
     config = dict()
     config["mhChirpInterval"] = 0.5
     config["neighborReliabilityTimeout"] = 2.5
@@ -27,6 +27,6 @@ def test_Experiment():
 
 
 if __name__ == "__main__":
-    test_Experiment()
+    Experiment()
 
 

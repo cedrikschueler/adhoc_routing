@@ -34,7 +34,7 @@ class RoutingTable:
         for destination in self.Routes:
             for gateway in self.Routes[destination]:
                 if self.Routes[destination][gateway]["ExpiryTime"] < time.time():
-                    self.__del_route(destination, gateway)
+                    #self.__del_route(destination, gateway)
                     del self.Routes[destination][gateway]
 
 
@@ -47,7 +47,7 @@ class RoutingTable:
 
     def removeRoute(self, e):
         if e["Destination"] in self.Routes.keys():
-            self.__del_route(e["Destination"], e["Gateway"])
+            #self.__del_route(e["Destination"], e["Gateway"])
             del self.Routes[e["Destination"]][e["Gateway"]]
         else:
             raise Exception("Route not available!")
@@ -58,7 +58,7 @@ class RoutingTable:
             raise Exception("Destination is already registered!")
         else:
             self.Routes[e["Destination"]] = e
-            self.__add_route(e["Destination"], e["Gateway"])
+            #self.__add_route(e["Destination"], e["Gateway"])
 
     def __add_route(self, dest, gw):
         # sudo strace route add -net 192.168.0.0/24 gw 192.168.10.1
