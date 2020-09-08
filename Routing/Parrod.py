@@ -45,7 +45,7 @@ class Parrod():
     def start(self):
         print("Starting services")
         self.mobility.start()
-        self.udp.start()
+        self.udp.listen()
         self.mhChirpReminder.enter(self.mhChirpInterval_s, 1, lambda: self.sendMultiHopChirp())
         self.mhChirpReminder.run()
 
