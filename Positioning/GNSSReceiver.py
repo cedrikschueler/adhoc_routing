@@ -9,7 +9,6 @@ class GNSSReceiver(multiprocessing.Process):
         multiprocessing.Process.__init__(self)
         gpsd.connect()
         self.currentData = gpsd.get_current().lat, gpsd.get_current().lon, gpsd.get_current().alt
-        print("Initial: ", self.currentData)
 
     def getCurrentPosition_Sat(self) -> tuple():
         raw = gpsd.get_current()

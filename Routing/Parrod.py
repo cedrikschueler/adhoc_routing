@@ -152,7 +152,6 @@ class Parrod():
             msgData = self.mhChirp.deserialize(msg)
             remainingHops = self.handleIncomingMultiHopChirp(msgData)
             if remainingHops > 0 and self.postliminaryChecksPassed(msgData["Origin"], msgData["Hop"]):
-                print("Received mhChirp from ", msgData["Origin"], " with p = ", (msgData["X"], msgData["Y"], msgData["Z"]), " : ", msgData["Value"])
                 msgData["Value"] = self.getMaxValueFor(msgData["Origin"])
                 msgData["CreationTime"] = time.time()
                 msgData["Hop"] = self.ipAddress
