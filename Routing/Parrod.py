@@ -138,7 +138,8 @@ class Parrod():
         if origin != 0 and self.rescheduleRoutesOnTimeout and t2 >= 0.0:
             self.destinationToUpdateSchedule.enter(t2, 1, lambda: self.refreshRoutingTable(origin))
         elif origin != 0 and self.rescheduleRoutesOnTimeout and t2 <= 0.0 and t1 > 0.0 and t1 < 1.0:
-            self.destinationToUpdateSchedule.enterabs(time.time() + t1, 1, lambda: self.refreshRoutingTable(origin))
+            self.destinationToUpdateSchedule.enter(t1, 1, lambda: self.refreshRoutingTable(origin))
+        self.destinationToUpdateSchedule.run()
 
         return min(1.0, np.sqrt(max(t, 0.0)/self.mhChirpInterval_s))
 
@@ -335,6 +336,8 @@ class Parrod():
         p = self.mobility.getCurrentPosition()
         v = self.mobility.getCurrentVelocity()
 
+        self.trackPosition(np.array((time.time(),) + p))
+
         chirp["X"] = p[0]
         chirp["Y"] = p[1]
         chirp["Z"] = p[2]
@@ -358,7 +361,9 @@ class Parrod():
 
     '''
     Flight methods
-    Not implemented. Use Mobility Prediction package instead
     '''
-
+    def trackPosition(self, p: tuple):
+        self.histCoord.append(p)
+        if len(self.histCoord) > self.historySize:
+            self.histCoord.pop(0)
 

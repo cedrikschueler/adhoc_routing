@@ -1,12 +1,10 @@
-import multiprocessing
 import gpsd
 import time
 
 
-class GNSSReceiver(multiprocessing.Process):
+class GNSSReceiver():
 
     def __init__(self):
-        multiprocessing.Process.__init__(self)
         gpsd.connect()
         self.found_initial_fix = False
         print("Waiting for GNSS fix")
