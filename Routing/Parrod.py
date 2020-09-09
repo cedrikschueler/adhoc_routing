@@ -94,7 +94,6 @@ class Parrod():
 
         if target in self.Gateways.keys():
             for act in self.Gateways[target].keys():
-                # todo is the following if statement right here or in Omnet?
                 if (time.time() - self.Gateways[target][act]["lastSeen"] <= self.neighborReliabilityTimeout) and self.Gamma_Pos(act) > 0:
                     if self.qFunction(act, target) > res:
                         res = self.qFunction(act, target)
@@ -111,8 +110,7 @@ class Parrod():
         pj = self.Vi[neighbor]["coord"] + vj*t_elapsed_since_last_hello
 
         pi = self.mobility.getCurrentPosition()
-        vi = self.mobility.getCurrentPosition()
-        #vi = self.mobility.getCurrentVelocity()    // todo
+        vi = self.mobility.getCurrentVelocity()
 
         deltaP = pj - pi
         deltaV = vj - vi
@@ -159,8 +157,8 @@ class Parrod():
                 # Get location
                 # Todo: What if position is not available?
                 p = self.mobility.getCurrentPosition()
-                v = self.mobility.getCurrentPosition() # Todo: Or by differential prediction
-                #v = self.mobility.getCurrentVelocity() # Todo: Or by differential prediction
+                v = self.mobility.getCurrentVelocity()
+
                 msgData["X"] = p[0]
                 msgData["Y"] = p[1]
                 msgData["Z"] = p[2]
@@ -228,14 +226,6 @@ class Parrod():
 
         knownNeighbor = gateway in self.Vi.keys()
         if knownNeighbor and origin != self.ipAddress and self.Vi[gateway]["squNr"] <= squNr:
-            # Todo: Is the following important anymore?
-            #std::map < Ipv4Address, MDPState * >::iterator
-            #stateIt = C.find(gateway);
-            #std::map < Ipv4Address, Action * >::iterator
-            #actionIt = Ad.find(gateway);
-            #if (stateIt == C.end() | | actionIt == Ad.end()) {
-            #throw;
-            #}
             self.Vi[gateway]["lastSeen"] = time.time()
             self.Vi[gateway]["TP"] = 0.0
             self.Vi[gateway]["coord"] = np.array([x, y, z])
@@ -244,9 +234,6 @@ class Parrod():
             self.Vi[gateway]["Gamma_Mob"] = gamma_mob
             self.Vi[gateway]["Gamma_Pos"] = self.Gamma_Pos(gateway, 0)
             self.Vi[gateway]["squNr"] = squNr
-            #if (origin == gateway) {
-            #   nj->second->regRec();
-            #}
         else:
             self.Vi[gateway] = dict()
             self.Vi[gateway]["lastSeen"] = time.time()
@@ -346,8 +333,8 @@ class Parrod():
         # Get location
         # Todo: What if position is not available?
         p = self.mobility.getCurrentPosition()
-        v = self.mobility.getCurrentPosition()
-        #v = self.mobility.getCurrentVelocity()  # Todo: Or by differential prediction
+        v = self.mobility.getCurrentVelocity()
+
         chirp["X"] = p[0]
         chirp["Y"] = p[1]
         chirp["Z"] = p[2]
