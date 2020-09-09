@@ -83,7 +83,7 @@ class Parrod():
     def getMaxValueFor(self, target: int) -> float:
         res = -1000.0
         if target in self.Gateways.keys():
-            for act in self.Gateways.keys():
+            for act in self.Gateways[target].keys():
                 if (time.time() - self.Gateways[target][act]["lastSeen"] <= self.neighborReliabilityTimeout) and self.Gamma_Pos(act) > 0:
                     res = max(res, self.qFunction(act, target))
         return res
@@ -93,7 +93,7 @@ class Parrod():
         res = -1000.0
 
         if target in self.Gateways.keys():
-            for act in self.Gateways.keys():
+            for act in self.Gateways[target].keys():
                 # todo is the following if statement right here or in Omnet?
                 if (time.time() - self.Gateways[target][act]["lastSeen"] <= self.neighborReliabilityTimeout) and self.Gamma_Pos(act) > 0:
                     if self.qFunction(act, target) > res:
