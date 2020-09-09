@@ -41,7 +41,7 @@ class Parrod():
         self.udp.subscribe(self.handleMessageWhenUp)
 
         self.gnssUpdateInterval = config["gnssUpdateInterval"]
-        self.mobility = GNSSReceiver(self.gnssUpdateInterval)
+        self.mobility = GNSSReceiver()
 
     def start(self):
         print("Starting services")
