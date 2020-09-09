@@ -4,6 +4,7 @@ import struct
 import fcntl
 import pyroute2 as pr2
 import subprocess
+import ipaddress as ip
 
 # find const values
 # grep IFF_UP -rl /usr/include/
@@ -23,6 +24,9 @@ RTF_HOST = 0x0004
 
 AF_INET = socket.AF_INET
 
+def intToIpv4(inp: int) -> str:
+    return ip.IPv4Address(inp).__str__()
+
 class RoutingTable:
 #https://www.programcreek.com/python/?code=alexsunday%2Fpyvpn%2Fpyvpn-master%2Fsrc%2Futil.py
 
@@ -33,7 +37,7 @@ class RoutingTable:
     def purge(self):
         for destination in list(self.Routes.keys()):
             if self.Routes[destination]["ExpiryTime"] < time.time():
-                self.__del_route(destination, self.Routes[destination]["Gateway"])
+                self.__del_route(intToIpv4(destination), intToIpv4(self.Routes[destination]["Gateway"]))
                 del self.Routes[destination]
 
 
@@ -46,7 +50,7 @@ class RoutingTable:
 
     def removeRoute(self, e):
         if e["Destination"] in self.Routes.keys():
-            self.__del_route(e["Destination"], e["Gateway"])
+            self.__del_route(intToIpv4(e["Destination"]), intToIpv4(e["Gateway"]))
             del self.Routes[e["Destination"]]
         else:
             raise Exception("Route not available!")
@@ -57,7 +61,13 @@ class RoutingTable:
             raise Exception("Destination is already registered!")
         else:
             self.Routes[e["Destination"]] = e
-            self.__add_route(e["Destination"], e["Gateway"])
+            self.__add_route(intToIpv4(e["Destination"]), intToIpv4(e["Gateway"]))
+
+    def a(self, d, g):
+        self.__add_route(intToIpv4(d), intToIpv4(g))
+
+    def d(self, d, g):
+        self.__del_route(intToIpv4(d), intToIpv4(g))
 
     def __add_route(self, dest, gw):
         # sudo strace route add -net 192.168.0.0/24 gw 192.168.10.1
@@ -101,5 +111,15 @@ class RoutingTable:
 
 
 if __name__ == "__main__":
-    pass
+    rt = RoutingTable("wlp2s0")
+    print("Before:\n")
+    subprocess.call(["route"])
+    rt.a(3232281187, 3232281187)
+    print("After:\n")
+    subprocess.call(["route"])
+    time.sleep(5)
+    rt.d(3232281187, 3232281187)
+    print("End:\n")
+    subprocess.call(["route"])
+
 

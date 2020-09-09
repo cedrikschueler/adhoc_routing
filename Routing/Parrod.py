@@ -5,7 +5,7 @@ from Messages.MultiHopChirp import MultiHopChirp
 import numpy as np
 import time
 import sched
-import ipaddress
+import ipaddress as ip
 
 class Parrod():
 
@@ -31,7 +31,7 @@ class Parrod():
         self.rescheduleRoutesOnTimeout = config["rescheduleRoutesOnTimeout"]
         self.destinationToUpdateSchedule = sched.scheduler(time.time, time.sleep)
         self.predictionMethod = config["predictionMethod"]
-        self.ipAddress = int(ipaddress.IPv4Address(config["ipAddress"]))
+        self.ipAddress = int(ip.IPv4Address(config["ipAddress"]))
 
         self.rt = RoutingTable(config["ifname"])
 
