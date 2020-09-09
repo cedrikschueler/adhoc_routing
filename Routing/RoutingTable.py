@@ -33,7 +33,7 @@ class RoutingTable:
     def purge(self):
         for destination in list(self.Routes.keys()):
             if self.Routes[destination]["ExpiryTime"] < time.time():
-                #self.__del_route(destination, gateway)
+                self.__del_route(destination, self.Routes[destination]["Gateway"])
                 del self.Routes[destination]
 
 
@@ -46,7 +46,7 @@ class RoutingTable:
 
     def removeRoute(self, e):
         if e["Destination"] in self.Routes.keys():
-            #self.__del_route(e["Destination"], e["Gateway"])
+            self.__del_route(e["Destination"], e["Gateway"])
             del self.Routes[e["Destination"]]
         else:
             raise Exception("Route not available!")
@@ -57,13 +57,13 @@ class RoutingTable:
             raise Exception("Destination is already registered!")
         else:
             self.Routes[e["Destination"]] = e
-            #self.__add_route(e["Destination"], e["Gateway"])
+            self.__add_route(e["Destination"], e["Gateway"])
 
     def __add_route(self, dest, gw):
         # sudo strace route add -net 192.168.0.0/24 gw 192.168.10.1
         # ioctl(3, SIOCADDRT, ifr)
         # /usr/include/net/route.h
-        echo = subprocess.Popen(["ip", "route", "replace", dest, "via", gw, "dev", "wlp2s0"], stdout=subprocess.PIPE)
+        echo = subprocess.Popen(["ip", "route", "replace", dest, "via", gw, "dev", self.ifname], stdout=subprocess.PIPE)
         return 0
         pad = ('\x00' * 8).encode("utf-8")
         inet_aton = socket.inet_aton
@@ -80,7 +80,7 @@ class RoutingTable:
         return 0
 
     def __del_route(self, dest, gw):
-        echo = subprocess.Popen(["ip", "route", "delete", dest, "via", gw, "dev", "wlp2s0"], stdout=subprocess.PIPE)
+        echo = subprocess.Popen(["ip", "route", "delete", dest, "via", gw, "dev", self.ifname], stdout=subprocess.PIPE)
         return 0
         # sudo strace route add -net 192.168.0.0/24 gw 192.168.10.1
         # ioctl(3, SIOCADDRT, ifr)
