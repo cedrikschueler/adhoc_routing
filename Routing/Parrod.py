@@ -50,7 +50,7 @@ class Parrod():
         self.mhChirpReminder.enter(self.mhChirpInterval_s, 1, lambda: self.sendMultiHopChirp())
         self.mhChirpReminder.run()
 
-    def stop(self):
+    def terminate(self):
         self.mobility.terminate()
         self.udp.terminate()
     '''
