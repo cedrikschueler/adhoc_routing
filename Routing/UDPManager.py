@@ -44,4 +44,4 @@ if __name__ == "__main__":
     exit()
     while 1:
         time.sleep(1)
-        udp_mgr.broadcastData("Lorem ipsum solor amet")
+        udp_mgr.broadcastData("Lorem ipsum dolor sit amet")
