@@ -2,6 +2,8 @@ from Routing.Parrod import Parrod
 from Traffic.TrafficGenerator import TrafficGenerator, TrafficReceiver
 import time
 
+TRANSMISSION_RANGE = 230.0
+
 def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0):
     routingProtocol = None
     trafficInstance = None
@@ -43,7 +45,7 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     elif config["ipAddress"] == traffic["Destination"]:
         trafficInstance = TrafficReceiver(traffic["Sender"], port=traffic["Port"], bufferSize=traffic["MTU"])
 
-    routingProtocol = Parrod(config, 230.0)
+    routingProtocol = Parrod(config, TRANSMISSION_RANGE)
 
     # After everything is set up, wait to start the experiment
     time.sleep(waitTimeBeforeStart)
