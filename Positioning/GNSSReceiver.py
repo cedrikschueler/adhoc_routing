@@ -1,5 +1,6 @@
 import gpsd
 import time
+import numpy as np
 
 
 class GNSSReceiver():
@@ -15,16 +16,56 @@ class GNSSReceiver():
                 time.sleep(1) # Try again every second
 
     def getCurrentPosition_Sat(self) -> tuple():
+        '''
+        Get current Position in Satellite coordinates (WGS84)
+        :return:
+        '''
         raw = gpsd.get_current()
         return raw.lat, raw.lon, raw.alt
 
     def getCurrentVelocity(self):
+        '''
+        Get current velocity
+        :return:
+        '''
         raw = gpsd.get_current().movement()
         return raw["speed"], raw["track"], raw["climb"]
 
     def getCurrentPosition(self) -> tuple:
-        # todo convert to cartesian, Meanwhile use satelite system:
-        return self.getCurrentPosition_Sat()
+        '''
+        Get current position in Cartesian coordinates
+        :return: (x, y, z)
+        '''
+        return self.WGS84toXYZ(self.getCurrentPosition_Sat())
+
+
+    def WGS84toXYZ(self, lon: float, lat: float, alt: float) -> tuple:
+        '''
+        Converts WGS84 coordinates to Cartesian coordinates
+        Credits: https://stackoverflow.com/questions/41159336/how-to-convert-a-spherical-velocity-coordinates-into-cartesian/41161714#41161714
+
+
+        :param lon: Longitude
+        :param lat: Latitude
+        :param alt: Altitude
+        :return: (x, y, z)
+        '''
+        _earth_a=6378137.00000   # [m] WGS84 equator radius
+        _earth_b=6356752.31414   # [m] WGS84 epolar radius
+        _earth_e=8.1819190842622e-2 #  WGS84 eccentricity
+
+        a = lon
+        b = lat
+        h = alt
+        c = np.cos(b)
+        s = np.sin(b)
+
+        l = _earth_a/np.sqrt(1.0-(_earth_e**2 * s**2))
+        x = (l+h)*c*np.cos(a)
+        y = (l+h)*c*np.sin(a)
+        z = (((1.0-_earth_e**2)*l)+h)*s
+
+        return x, y, z
 
 if __name__ == '__main__':
 
