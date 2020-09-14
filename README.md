@@ -15,10 +15,11 @@ The usage of json-formatted setup is recommended. This way you can easily extend
 - [ ] DSDV
 
 #### Known Issues
-- [ ] Conversion of GPS coordinates to Cartesian is missing (required for Mobility Prediction)
+- [x] Conversion of GPS coordinates to Cartesian is missing (required for Mobility Prediction)
+- [x] Traffic Generator generates traffic, but no evaluation is implemented
+- [x] ~~Control flags when writing to Linux routing table~~ (Seems fine)
 - [ ] Mobility Prediction methods are not embedded yet
-- [ ] Traffic Generator generates traffic, but no evaluation is implemented (t.b.d. soon!)
-- [ ] Control flags when writing to Linux routing table
+- [ ] Provide velocity from GNSSReceiver
 
 ## Related Work
 Created during my master thesis at [Communication Networks Institute (CNI)](https://www.kn.e-technik.tu-dortmund.de/cms/en/institute/), TU Dortmund University
