@@ -37,13 +37,14 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
         "MTU": 1460,
         "Sender": "192.168.178.27",
         "Destination": "192.168.178.24",
-        "Port": 1901
+        "Port": 1901,
+        "Filename": "eval.csv"
     }
 
     if config["ipAddress"] == traffic["Sender"]:
         trafficInstance = TrafficGenerator(traffic["CBR"], traffic["Destination"], MTU_used_byte=traffic["MTU"], port=traffic["Port"])
     elif config["ipAddress"] == traffic["Destination"]:
-        trafficInstance = TrafficReceiver(traffic["Sender"], port=traffic["Port"], bufferSize=traffic["MTU"])
+        trafficInstance = TrafficReceiver(traffic["Sender"], port=traffic["Port"], bufferSize=traffic["MTU"], filename=traffic["Filename"])
 
     routingProtocol = Parrod(config, TRANSMISSION_RANGE)
 
