@@ -18,13 +18,27 @@ class UDPManager(multiprocessing.Process):
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
     def subscribe(self, callable):
+        '''
+        Appends a callable to list of subscriptors
+        :param callable: Compatible function to call
+        :return:
+        '''
         self.subscriptions.append(callable)
 
     def listen(self) -> None:
+        '''
+        Binds the socket to (address, port) and starts the runtime
+        :return:
+        '''
         self.socket.bind((self.address,  self.port))
         self.start()
 
     def run(self):
+        '''
+        Runtime method.
+        The socket listens to udp port and notifies subscriptors if a message is received
+        :return:
+        '''
         try:
             while True:
                 data, _ = self.socket.recvfrom(self.bufferSize)
@@ -34,7 +48,12 @@ class UDPManager(multiprocessing.Process):
         except StopIteration:
             pass
 
-    def broadcastData(self, data):
+    def broadcastData(self, data: bytearray):
+        '''
+        Sends a broadcast on bound port
+        :param data: Bytearray to send
+        :return:
+        '''
         self.socket.sendto(data, ('<broadcast>', self.port))
 
 if __name__ == "__main__":

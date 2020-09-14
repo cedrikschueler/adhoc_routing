@@ -21,6 +21,10 @@ class TrafficGenerator(multiprocessing.Process):
         self.data = bytearray([0 for x in range(0, MTU_used_byte)])
 
     def run(self):
+        '''
+        Runtime method. Sends data via UDP socket with desired constant bit rate
+        :return:
+        '''
         try:
             while True:
                 self.socket.sendto(self.data, (self.destination, self.port))
@@ -42,6 +46,10 @@ class TrafficReceiver(multiprocessing.Process):
         self.socket.bind(("", self.port))
 
     def run(self):
+        '''
+        Runtime method. Listens to UDP socket
+        :return:
+        '''
         try:
             while True:
                 data, addr = self.socket.recvfrom(self.bufferSize)
