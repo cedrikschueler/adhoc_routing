@@ -1,0 +1,11 @@
+abc
+gpsd
+ipaddress
+multiprocessing
+numpy
+sched
+socket
+struct
+subprocess
+sys
+time
