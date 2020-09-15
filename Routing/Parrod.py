@@ -99,8 +99,8 @@ class Parrod():
         a = None
         res = -1000.0
 
-        if target in self.Gateways.keys():
-            for act in self.Gateways[target].keys():
+        if target in list(self.Gateways.keys()):
+            for act in list(self.Gateways[target].keys()):
                 deltaT = time.time() - self.Gateways[target][act]["lastSeen"]
                 if (deltaT <= min(self.neighborReliabilityTimeout, self.Gamma_Pos(act))):
                     if self.qFunction(act, target) > res:
@@ -140,7 +140,6 @@ class Parrod():
         else:
             t1 = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
             t2 = (-b - np.sqrt(b**2 - 4*a*c))/(2*a)
-
             t = 0.0 if (t2 >= 0.0 or (t2 < 0.0 and t1 < 0.0)) else t1
 
         if origin != 0 and self.rescheduleRoutesOnTimeout and t2 >= 0.0:
