@@ -92,7 +92,6 @@ class TrafficReceiver(multiprocessing.Process):
             while True:
                 data, addr = self.socket.recvfrom(self.bufferSize)
                 if addr[0] == self.sender or self.sender == "":
-                    #print("received message with squNr", struct.unpack("Qd", data[:16])[0]," ", len(data), " Bytes from ", addr[0])
                     t1 = time.time()
                     _squNr, _t0 = struct.unpack("Qd", data[:16])    # Unpack non-padding elements
                     self.receivedPackets.append((t1, _squNr, t1-t0, addr[0]))

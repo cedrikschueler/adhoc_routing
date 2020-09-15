@@ -23,20 +23,12 @@ class GNSSReceiver():
         raw = gpsd.get_current()
         return raw.lat, raw.lon, raw.alt
 
-    def getCurrentVelocity(self):
-        '''
-        Get current velocity
-        :return:
-        '''
-        raw = gpsd.get_current().movement()
-        return raw["speed"], raw["track"], raw["climb"]
-
     def getCurrentPosition(self) -> tuple:
         '''
         Get current position in Cartesian coordinates
         :return: (x, y, z)
         '''
-        return self.WGS84toXYZ(self.getCurrentPosition_Sat())
+        return self.WGS84toXYZ(*self.getCurrentPosition_Sat())
 
 
     def WGS84toXYZ(self, lon: float, lat: float, alt: float) -> tuple:
@@ -73,4 +65,3 @@ if __name__ == '__main__':
     while 1:
         time.sleep(1)
         print(gpsp.getCurrentPosition())
-        print(gpsp.getCurrentVelocity())

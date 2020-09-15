@@ -17,12 +17,13 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     config["qFctAlpha"] = 0.4
     config["qFctGamma"] = 0.9
     config["maxHops"] = 32
-    config["historySize"]  =5
+    config["historySize"] = 5
     config["rescheduleRoutesOnTimeout"] = True
-    config["predictionMethod"] = "slope"
     config["ifname"] = "wlp2s0"
     config["ipAddress"] = "192.168.178.27"
 
+    config["predictionMethod"] = "slope"
+    config["waypointProvider"] = ""
 
     config["bcPort"] = 1801
     config["bufferSize"] = 1460
