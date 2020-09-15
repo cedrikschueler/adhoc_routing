@@ -18,7 +18,7 @@ The usage of json-formatted setup is recommended. This way you can easily extend
 - [x] Conversion of GPS coordinates to Cartesian is missing (required for Mobility Prediction)
 - [x] Traffic Generator generates traffic, but no evaluation is implemented
 - [x] ~~Control flags when writing to Linux routing table~~ (Seems fine)
-- [ ] Mobility Prediction methods are not embedded yet
+- [x] Mobility Prediction methods are not embedded yet
 - [x] ~~Provide velocity from GNSSReceiver~~ (Velocity not needed in newest Parrod implementation)
 
 ## Related Work
