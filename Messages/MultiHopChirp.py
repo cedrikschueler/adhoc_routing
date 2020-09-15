@@ -9,7 +9,6 @@ class MultiHopChirp(RoutingMessage):
 
         Origin - Ipv4 - Int
         Hop - Ipv4 - Int
-        CreationTime - Double - Float
         SquNr - Unsigned Int - Unsigned Int
 
         Position:
@@ -24,16 +23,15 @@ class MultiHopChirp(RoutingMessage):
         Value - Double - Float
         HopCount - Integer - Int
 
-        @IIdIddddddddI
+        @IIIddddddddI
         '''
-        fmt = "@IIdIddddddddI"
+        fmt = "@IIIddddddddI"
         super(MultiHopChirp, self).__init__(fmt)
 
     def serialize(self, data: dict) -> bytearray:
         values = (
             data["Origin"],
             data["Hop"],
-            data["CreationTime"],
             data["SquNr"],
             data["X"],
             data["Y"],
@@ -48,11 +46,10 @@ class MultiHopChirp(RoutingMessage):
         return struct.pack(self.fmt, *values)
 
     def deserialize(self, data: bytearray) -> dict:
-        Origin, Hop, CreationTime, SquNr, X, Y, Z, Vx, Vy, Vz, GammaMob, Value, HopCount = struct.unpack(self.fmt, data)
+        Origin, Hop, SquNr, X, Y, Z, Vx, Vy, Vz, GammaMob, Value, HopCount = struct.unpack(self.fmt, data)
         return {
             "Origin": Origin,
             "Hop": Hop,
-            "CreationTime": CreationTime,
             "SquNr": SquNr,
             "X": X,
             "Y": Y,
@@ -66,13 +63,12 @@ class MultiHopChirp(RoutingMessage):
         }
 
     def length(self) -> int:
-        return 92
+        return 84
 
 if __name__ == "__main__":
     testDict = {
         "Origin": 2130706433,
         "Hop": 2130706433,
-        "CreationTime": 0,
         "SquNr": 1337,
         "X": 500.0,
         "Y": 500.0,
@@ -87,4 +83,5 @@ if __name__ == "__main__":
 
     MH = MultiHopChirp()
     ser = MH.serialize(testDict)
+    print(len(ser))
     deser = MH.deserialize(ser)
