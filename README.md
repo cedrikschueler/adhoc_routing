@@ -19,7 +19,7 @@ The usage of json-formatted setup is recommended. This way you can easily extend
 - [x] Traffic Generator generates traffic, but no evaluation is implemented
 - [x] ~~Control flags when writing to Linux routing table~~ (Seems fine)
 - [ ] Mobility Prediction methods are not embedded yet
-- [ ] Provide velocity from GNSSReceiver
+- [x] ~~Provide velocity from GNSSReceiver~~ (Velocity not needed in newest Parrod implementation)
 
 ## Related Work
 Created during my master thesis at [Communication Networks Institute (CNI)](https://www.kn.e-technik.tu-dortmund.de/cms/en/institute/), TU Dortmund University
