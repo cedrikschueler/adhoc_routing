@@ -28,7 +28,7 @@ class GNSSReceiver():
         Get current position in Cartesian coordinates
         :return: (x, y, z)
         '''
-        return self.WGS84toXYZ(*self.getCurrentPosition_Sat())
+        return np.array(self.WGS84toXYZ(*self.getCurrentPosition_Sat()))
 
 
     def WGS84toXYZ(self, lon: float, lat: float, alt: float) -> tuple:

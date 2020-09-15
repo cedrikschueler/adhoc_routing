@@ -210,37 +210,11 @@ class SlopePredictor(PredictionMethod):
         self.slope = np.array([0, 0, 0], dtype='float64')
         for i in range(1, len(historicalPositions)):
             self.slope += historicalPositions[i][1:] - historicalPositions[i - 1][1:]
-        self.slope /= len(historicalPositions) - 1
+        self.slope /= max(len(historicalPositions) - 1, 1)
         self.P = historicalPositions[-1][1:]
 
     def predict(self) -> np.array:
         return self.P + self.tU * self.Np * self.slope
-
-class QPredictor(PredictionMethod):
-    P: np.array
-    tU: float
-    Q: np.array
-    a: float
-    g: float
-    t: float
-
-    def __init__(self, Np: int, tU: float, alpha: float, gamma: float):
-        super(QPredictor, self).__init__(Np)
-        self.tU = tU
-        self.a = alpha
-        self.g = gamma
-
-    def fit(self, historicalPositions: [np.array], steeringVector: np.array = np.empty(0),
-            plannedWaypoints: [np.array] = []) -> None:
-        historicalPositions = historicalPositions[1:]   # Time information not needed for this method
-        self.Q = 0
-        for i in range(1, len(historicalPositions)):
-            self.Q = self.Q * (1 - self.a) + self.a * self.g * (historicalPositions[i] - historicalPositions[i - 1])
-        self.P = historicalPositions[-1]
-        self.t = historicalPositions[-1][0]
-
-    def predict(self) -> np.array:
-        return self.P + self.tU * self.Np * self.Q
 
 class NaivePredictor(PredictionMethod):
     P: np.array

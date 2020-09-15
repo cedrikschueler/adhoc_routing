@@ -343,7 +343,7 @@ class Parrod():
         p = self.mobility.getCurrentPosition()
         v = (forecast - p) / (self.neighborReliabilityTimeout if self.neighborReliabilityTimeout != 0 else 1.0)
 
-        self.trackPosition(np.array((time.time(),) + p))
+        self.trackPosition(np.array([time.time(), p[0], p[1], p[2]]))
 
         chirp["X"] = p[0]
         chirp["Y"] = p[1]
@@ -376,7 +376,7 @@ class Parrod():
 
     def forecastPosition(self):
         if len(self.histCoord) == 0:
-            return np.array([0, 0, 0])
+            return self.mobility.getCurrentPosition()
         else:
             if self.predictionMethod == "slope":
                 pred = SlopePredictor(int(self.neighborReliabilityTimeout/self.mhChirpInterval_s), self.gnssUpdateInterval)
@@ -397,4 +397,4 @@ class Parrod():
                 wp = []
 
             pred.fit(self.histCoord, plannedWaypoints=wp)
-            return pred.predict()
+            return np.array(pred.predict())
