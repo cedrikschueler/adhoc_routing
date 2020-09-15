@@ -2,10 +2,16 @@ from Positioning.GNSSReceiver import GNSSReceiver
 from Routing.UDPManager import UDPManager
 from Routing.RoutingTable import RoutingTable
 from Messages.MultiHopChirp import MultiHopChirp
+from Prediction.Predictors import SlopePredictor, NaivePredictor, BATMobilePredictor, InterpolatedBatman
+from Positioning.WaypointProvider import WaypointProvider
 import numpy as np
 import time
 import sched
 import ipaddress as ip
+
+WP_REACHED_M = 25.0
+V_MAX_KMH = 50.0
+PREDICTOR_STEPSIZE = 0.1
 
 class Parrod():
 
@@ -14,6 +20,7 @@ class Parrod():
     Gateways: dict = dict()
     lastSetOfNeighbors:list = []
     m_Gamma_Mob: float = 0.0
+    histCoord: list = []
 
     def __init__(self, config: dict, transmissionRange_m: float):
         self.txRange_m = transmissionRange_m
@@ -31,6 +38,7 @@ class Parrod():
         self.rescheduleRoutesOnTimeout = config["rescheduleRoutesOnTimeout"]
         self.destinationToUpdateSchedule = sched.scheduler(time.time, time.sleep)
         self.predictionMethod = config["predictionMethod"]
+        self.waypointProvider = config["waypointProvider"]
         self.ipAddress = int(ip.IPv4Address(config["ipAddress"]))
 
         self.rt = RoutingTable(config["ifname"])
@@ -45,13 +53,11 @@ class Parrod():
 
     def start(self):
         print("Starting services")
-        self.mobility.start()
         self.udp.listen()
         self.mhChirpReminder.enter(self.mhChirpInterval_s, 1, lambda: self.sendMultiHopChirp())
         self.mhChirpReminder.run()
 
     def terminate(self):
-        self.mobility.terminate()
         self.udp.terminate()
     '''
     Brain functions
@@ -73,7 +79,7 @@ class Parrod():
     def qFunction(self, hop: int, target: int) -> float:
         discounts = []
         discounts.append(self.qFctGamma)
-        discounts.append(self.Gamma_Pos(hop))
+        discounts.append(min(1.0, np.sqrt(max(self.Gamma_Pos(hop), 0.0) / self.mhChirpInterval_s)))
         discounts.append(self.Vi[hop]["Gamma_Mob"])
 
         return (1 - self.qFctAlpha)*self.Gateways[target][hop]["Q"] + \
@@ -84,7 +90,8 @@ class Parrod():
         res = -1000.0
         if target in self.Gateways.keys():
             for act in self.Gateways[target].keys():
-                if (time.time() - self.Gateways[target][act]["lastSeen"] <= self.neighborReliabilityTimeout) and self.Gamma_Pos(act) > 0:
+                deltaT = time.time() - self.Gateways[target][act]["lastSeen"]
+                if (deltaT <= min(self.neighborReliabilityTimeout, self.Gamma_Pos(act))):
                     res = max(res, self.qFunction(act, target))
         return res
 
@@ -94,7 +101,8 @@ class Parrod():
 
         if target in self.Gateways.keys():
             for act in self.Gateways[target].keys():
-                if (time.time() - self.Gateways[target][act]["lastSeen"] <= self.neighborReliabilityTimeout) and self.Gamma_Pos(act) > 0:
+                deltaT = time.time() - self.Gateways[target][act]["lastSeen"]
+                if (deltaT <= min(self.neighborReliabilityTimeout, self.Gamma_Pos(act))):
                     if self.qFunction(act, target) > res:
                         res = self.qFunction(act, target)
                         a = act
@@ -110,7 +118,7 @@ class Parrod():
         pj = self.Vi[neighbor]["coord"] + vj*t_elapsed_since_last_hello
 
         pi = self.mobility.getCurrentPosition()
-        vi = self.mobility.getCurrentVelocity()
+        vi = (self.forecastPosition() - pi)/(self.neighborReliabilityTimeout if self.neighborReliabilityTimeout != 0 else 1.0)
 
         deltaP = pj - pi
         deltaV = vj - vi
@@ -141,7 +149,7 @@ class Parrod():
             self.destinationToUpdateSchedule.enter(t1, 1, lambda: self.refreshRoutingTable(origin))
         self.destinationToUpdateSchedule.run()
 
-        return min(1.0, np.sqrt(max(t, 0.0)/self.mhChirpInterval_s))
+        return t
 
     '''
     Chirp functions
@@ -157,8 +165,9 @@ class Parrod():
 
                 # Get location
                 # Todo: What if position is not available?
+                forecast = self.forecastPosition()
                 p = self.mobility.getCurrentPosition()
-                v = self.mobility.getCurrentVelocity()
+                v = (forecast - p)/(self.neighborReliabilityTimeout if self.neighborReliabilityTimeout != 0 else 1.0)
 
                 msgData["X"] = p[0]
                 msgData["Y"] = p[1]
@@ -209,7 +218,6 @@ class Parrod():
     def handleIncomingMultiHopChirp(self, chirp: dict) -> int:
         origin = chirp["Origin"]
         gateway = chirp["Hop"]
-        creationTime = chirp["CreationTime"]
 
         val = chirp["Value"]
 
@@ -228,7 +236,6 @@ class Parrod():
         knownNeighbor = gateway in self.Vi.keys()
         if knownNeighbor and origin != self.ipAddress and self.Vi[gateway]["squNr"] <= squNr:
             self.Vi[gateway]["lastSeen"] = time.time()
-            self.Vi[gateway]["TP"] = 0.0
             self.Vi[gateway]["coord"] = np.array([x, y, z])
             self.Vi[gateway]["velo"] = np.array([vx, vy, vz])
             self.Vi[gateway]["futurePosition"] = np.array([x, y, z])
@@ -238,7 +245,6 @@ class Parrod():
         else:
             self.Vi[gateway] = dict()
             self.Vi[gateway]["lastSeen"] = time.time()
-            self.Vi[gateway]["TP"] = 0.0
             self.Vi[gateway]["coord"] = np.array([x, y, z])
             self.Vi[gateway]["velo"] = np.array([vx, vy, vz])
             self.Vi[gateway]["futurePosition"] = np.array([x, y, z])
@@ -306,7 +312,7 @@ class Parrod():
                 e = dict()
                 e["Destination"] = origin
                 e["Gateway"] = bestHop
-                e["ExpiryTime"] = time.time() + min(self.neighborReliabilityTimeout, self.Vi[bestHop]["Gamma_Pos"]**2 * self.mhChirpInterval_s)
+                e["ExpiryTime"] = time.time() + min(self.neighborReliabilityTimeout, self.Vi[bestHop]["Gamma_Pos"])
                 e["Metric"] = self.Gateways[origin][bestHop]["Q"]
 
                 self.rt.addRoute(e)
@@ -314,7 +320,8 @@ class Parrod():
     def purgeNeighbors(self):
         for target in list(self.Gateways.keys()):
             for act in list(self.Gateways[target]):
-                if time.time() - self.Gateways[target][act]["lastSeen"] > self.neighborReliabilityTimeout or self.Gamma_Pos(act) <= 0.0:
+                deltaT = time.time() - self.Gateways[target][act]["lastSeen"]
+                if deltaT > min(self.neighborReliabilityTimeout, self.Gamma_Pos(act)):
                     del self.Gateways[target][act]
 
         for n in list(self.Vi.keys()):
@@ -332,9 +339,9 @@ class Parrod():
         chirp["SquNr"] = self.getNextSquNr()
 
         # Get location
-        # Todo: What if position is not available?
+        forecast = self.forecastPosition()
         p = self.mobility.getCurrentPosition()
-        v = self.mobility.getCurrentVelocity()
+        v = (forecast - p) / (self.neighborReliabilityTimeout if self.neighborReliabilityTimeout != 0 else 1.0)
 
         self.trackPosition(np.array((time.time(),) + p))
 
@@ -363,7 +370,31 @@ class Parrod():
     Flight methods
     '''
     def trackPosition(self, p: tuple):
-        self.histCoord.append(p)
+        self.histCoord.append(np.array(p))
         if len(self.histCoord) > self.historySize:
             self.histCoord.pop(0)
 
+    def forecastPosition(self):
+        if len(self.histCoord) == 0:
+            return np.array([0, 0, 0])
+        else:
+            if self.predictionMethod == "slope":
+                pred = SlopePredictor(int(self.neighborReliabilityTimeout/self.mhChirpInterval_s), self.gnssUpdateInterval)
+            elif self.predictionMethod == "naive":
+                pred = NaivePredictor(int(self.neighborReliabilityTimeout/self.mhChirpInterval_s))
+            elif self.predictionMethod == "batman":
+                pred = BATMobilePredictor(int(self.neighborReliabilityTimeout/self.mhChirpInterval_s), self.gnssUpdateInterval, WP_REACHED_M, V_MAX_KMH) # todo: what if gnssUpdateInterval and mhChirp differ?
+            elif self.predictionMethod == "intbat":
+                pred = InterpolatedBatman(int(self.neighborReliabilityTimeout/self.mhChirpInterval_s), self.gnssUpdateInterval, WP_REACHED_M, V_MAX_KMH, PREDICTOR_STEPSIZE)
+            else:
+                valid = ["batman", "intbat", "naive", "slope"]
+                raise Exception(f"No valid prediction method chosen!\nSelect from: {valid}")
+
+            if self.waypointProvider is not "":
+                wpp = WaypointProvider()
+                wp = wpp.getWP()
+            else:
+                wp = []
+
+            pred.fit(self.histCoord, plannedWaypoints=wp)
+            return pred.predict()
