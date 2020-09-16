@@ -130,7 +130,7 @@ class Parrod():
         pz = deltaP[2]
         vz = deltaV[2]
 
-        a = vx*+2 + vy**2 + vz**2
+        a = vx**2 + vy**2 + vz**2
         b = 2*(px*vx + py*vy + pz*vz)
         c = px**2 + py**2 + pz**2 - self.txRange_m**2
 
