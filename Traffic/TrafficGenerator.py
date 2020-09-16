@@ -49,7 +49,7 @@ class TrafficGenerator(multiprocessing.Process):
 
 class TrafficReceiver(multiprocessing.Process):
 
-    def __init__(self, sender: str, port: int, bufferSize: int, filename:str = "eval.csv"):
+    def __init__(self, sender: str, port: int, bufferSize: int, filename: str = "eval.csv"):
         multiprocessing.Process.__init__(self)
         self.port = port
         self.bufferSize = bufferSize

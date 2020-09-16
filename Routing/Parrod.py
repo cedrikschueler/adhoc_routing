@@ -49,7 +49,7 @@ class Parrod():
         self.udp.subscribe(self.handleMessageWhenUp)
 
         self.gnssUpdateInterval = config["gnssUpdateInterval"]
-        self.mobility = GNSSReceiver(config["gpsReferencePoint"])
+        self.mobility = GNSSReceiver(config["gpsReferencePoint"], config["experimentName"])
 
     def start(self):
         print("Starting services")

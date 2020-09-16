@@ -12,6 +12,9 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     Parametrize Routing Protocol
     """
     config = dict()
+    config["experimentName"] = "endToEnd_16092020"
+
+    # Parrod config
     config["mhChirpInterval"] = 0.5
     config["neighborReliabilityTimeout"] = 2.5
     config["qFctAlpha"] = 0.4
@@ -19,15 +22,20 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     config["maxHops"] = 32
     config["historySize"] = 5
     config["rescheduleRoutesOnTimeout"] = True
-    config["ifname"] = "wlp2s0"
-    config["ipAddress"] = "192.168.178.27"
 
+    ## Mobility Prediction
     config["predictionMethod"] = "slope"
     config["waypointProvider"] = ""
 
+    # Network settings
+    config["ifname"] = "wlp2s0"
+    config["ipAddress"] = "192.168.178.27"
+
+    # UDP settings
     config["bcPort"] = 1801
     config["bufferSize"] = 1460
 
+    # GNSS Configuration
     config["gnssUpdateInterval"] = 1.0
     config["gpsReferencePoint"] = {
         "lat": 50.941220,
@@ -44,7 +52,7 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
         "Sender": "192.168.178.27",
         "Destination": "192.168.178.24",
         "Port": 1901,
-        "Filename": "eval.csv"
+        "Filename": f'{config["experimentName"]}_eval.csv'
     }
 
     if config["ipAddress"] == traffic["Sender"]:

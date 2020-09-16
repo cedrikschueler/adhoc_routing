@@ -13,8 +13,9 @@ E_SQ = F * (2 - F) # Square of Eccentricity
 
 class GNSSReceiver():
 
-    def __init__(self, gpsReferencePoint: dict):
+    def __init__(self, gpsReferencePoint: dict, experimentName: str = ""):
         self.gpsReferencePoint = (gpsReferencePoint["lat"], gpsReferencePoint["lon"], gpsReferencePoint["alt"])
+        self.fn = f'{experimentName}_trace.csv' if experimentName != "" else ""
         gpsd.connect()
         self.found_initial_fix = False
         print("Waiting for GNSS fix")
@@ -23,8 +24,9 @@ class GNSSReceiver():
                 self.found_initial_fix = True
             else:
                 time.sleep(1) # Try again every second
+        self.t = np.floor(time.time())
 
-    def getCurrentPosition_Sat(self) -> tuple():
+    def getCurrentPosition_Sat(self) -> tuple:
         '''
         Get current Position in Satellite coordinates (WGS84)
         :return:
@@ -32,13 +34,28 @@ class GNSSReceiver():
         raw = gpsd.get_current()
         return raw.lat, raw.lon, raw.alt
 
-    def getCurrentPosition(self) -> tuple:
+    def getCurrentPosition(self) -> np.array:
         '''
         Get current position in Cartesian coordinates
         :return: (x, y, z)
         '''
-        return np.array(ecefToEnu(*geodeticToEcef(*self.getCurrentPosition_Sat()), *self.gpsReferencePoint))
+        p = np.array(ecefToEnu(*geodeticToEcef(*self.getCurrentPosition_Sat()), *self.gpsReferencePoint))
+        self.fileWriteManager(p)
+        return p
 
+    def fileWriteManager(self, p: np.array) -> None:
+        '''
+        Writes position to trace file if specified
+        :param p: Position in local tangent plane
+        :return:
+        '''
+        t = np.floor(time.time())
+        if t - self.t >= 1.0:   # Record every second
+            if self.fn != "":
+                f = open(self.fn, "a")
+                f.write(f'{t},{p[0]},{p[1]},{p[2]}\n')
+                f.close()
+            self.t = t
 
 # Conversion from GPS (WGS84) to Local Tangent Plane
 # Credits: https://gist.github.com/govert/1b373696c9a27ff4c72a
