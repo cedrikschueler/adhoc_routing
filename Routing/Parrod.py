@@ -49,7 +49,7 @@ class Parrod():
         self.udp.subscribe(self.handleMessageWhenUp)
 
         self.gnssUpdateInterval = config["gnssUpdateInterval"]
-        self.mobility = GNSSReceiver()
+        self.mobility = GNSSReceiver(config["gpsReferencePoint"])
 
     def start(self):
         print("Starting services")
@@ -163,7 +163,6 @@ class Parrod():
                 msgData["Hop"] = self.ipAddress
 
                 # Get location
-                # Todo: What if position is not available?
                 forecast = self.forecastPosition()
                 p = self.mobility.getCurrentPosition()
                 v = (forecast - p)/(self.neighborReliabilityTimeout if self.neighborReliabilityTimeout != 0 else 1.0)
@@ -217,6 +216,10 @@ class Parrod():
     def handleIncomingMultiHopChirp(self, chirp: dict) -> int:
         origin = chirp["Origin"]
         gateway = chirp["Hop"]
+
+        if gateway == self.ipAddress:
+            # Return 0 if this message is an own message (This case is handled by OMNeT++ in the simulation)
+            return 0
 
         val = chirp["Value"]
 

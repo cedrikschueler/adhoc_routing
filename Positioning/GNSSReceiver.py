@@ -2,10 +2,19 @@ import gpsd
 import time
 import numpy as np
 
+A = 6378137.0 # WGS-84 Earth semimajor axis (m)
+B = 6356752.314245 # Derived Earth semiminor axis (m)
+F = (A - B)/A # Ellipsoid Flatness
+F_INV = 1.0/F # Inverse Flattening
+
+A_SQ = A**2
+B_SQ = B**2
+E_SQ = F * (2 - F) # Square of Eccentricity
 
 class GNSSReceiver():
 
-    def __init__(self):
+    def __init__(self, gpsReferencePoint: dict):
+        self.gpsReferencePoint = (gpsReferencePoint["lat"], gpsReferencePoint["lon"], gpsReferencePoint["alt"])
         gpsd.connect()
         self.found_initial_fix = False
         print("Waiting for GNSS fix")
@@ -28,40 +37,70 @@ class GNSSReceiver():
         Get current position in Cartesian coordinates
         :return: (x, y, z)
         '''
-        return np.array(self.WGS84toXYZ(*self.getCurrentPosition_Sat()))
+        return np.array(ecefToEnu(*geodeticToEcef(*self.getCurrentPosition_Sat()), *self.gpsReferencePoint))
 
 
-    def WGS84toXYZ(self, lon: float, lat: float, alt: float) -> tuple:
-        '''
-        Converts WGS84 coordinates to Cartesian coordinates
-        Credits: https://stackoverflow.com/questions/41159336/how-to-convert-a-spherical-velocity-coordinates-into-cartesian/41161714#41161714
+# Conversion from GPS (WGS84) to Local Tangent Plane
+# Credits: https://gist.github.com/govert/1b373696c9a27ff4c72a
+
+def degreesToRadians(ang: float) -> float:
+    return np.pi/180.0 * ang
+
+def radiansToDegrees(ang: float) -> float:
+    return 180.0/ np.pi * ang
+
+def geodeticToEcef(lat: float, lon: float, h: float) -> np.array:
+    _lambda = degreesToRadians(lat)
+    _phi = degreesToRadians(lon)
+    s = np.sin(_lambda)
+    N = A / np.sqrt(1 - E_SQ * s ** 2)
+
+    sin_lambda = np.sin(_lambda)
+    cos_lambda = np.cos(_lambda)
+    cos_phi = np.cos(_phi)
+    sin_phi = np.sin(_phi)
+
+    x = (h + N) * cos_lambda * cos_phi
+    y = (h + N) * cos_lambda * sin_phi
+    z = (h + (1 - E_SQ) * N) * sin_lambda
+
+    return np.array([x, y, z])
+
+def ecefToEnu(x: float, y: float, z: float, lat0: float, lon0: float, h0: float):
+    _lambda = degreesToRadians(lat0)
+    _phi = degreesToRadians(lon0)
+    s = np.sin(_lambda)
+    N = A / np.sqrt(1 - E_SQ * s ** 2)
+
+    sin_lambda = np.sin(_lambda)
+    cos_lambda = np.cos(_lambda)
+    cos_phi = np.cos(_phi)
+    sin_phi = np.sin(_phi)
+
+    x0 = (h0 + N) * cos_lambda * cos_phi
+    y0 = (h0 + N) * cos_lambda * sin_phi
+    z0 = (h0 + (1 - E_SQ) * N) * sin_lambda
+
+    xd = x - x0
+    yd = y - y0
+    zd = z - z0
+
+    # This is the matrix multiplication
+    xEast = -sin_phi * xd + cos_phi * yd
+    yNorth = -cos_phi * sin_lambda * xd - sin_lambda * sin_phi * yd + cos_lambda * zd
+    zUp = cos_lambda * cos_phi * xd + cos_lambda * sin_phi * yd + sin_lambda * zd
+
+    return np.array([xEast, yNorth, zUp])
 
 
-        :param lon: Longitude
-        :param lat: Latitude
-        :param alt: Altitude
-        :return: (x, y, z)
-        '''
-        _earth_a=6378137.00000   # [m] WGS84 equator radius
-        _earth_b=6356752.31414   # [m] WGS84 epolar radius
-        _earth_e=8.1819190842622e-2 #  WGS84 eccentricity
-
-        a = lon
-        b = lat
-        h = alt
-        c = np.cos(b)
-        s = np.sin(b)
-
-        l = _earth_a/np.sqrt(1.0-(_earth_e**2 * s**2))
-        x = (l+h)*c*np.cos(a)
-        y = (l+h)*c*np.sin(a)
-        z = (((1.0-_earth_e**2)*l)+h)*s
-
-        return x, y, z
 
 if __name__ == '__main__':
-
-    gpsp = GNSSReceiver()
+    gpsReferencePoint = {
+        "lat": 50.941220,
+        "lon": 6.957029,
+        "alt": 40.0
+    }
+    gpsp = GNSSReceiver(gpsReferencePoint)
     while 1:
         time.sleep(1)
         print(gpsp.getCurrentPosition())

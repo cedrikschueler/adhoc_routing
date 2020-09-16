@@ -29,6 +29,11 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     config["bufferSize"] = 1460
 
     config["gnssUpdateInterval"] = 1.0
+    config["gpsReferencePoint"] = {
+        "lat": 50.941220,
+        "lon": 6.957029,
+        "alt": 40.0
+    }
 
     """
     Parametrize Traffic
