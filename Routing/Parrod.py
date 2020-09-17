@@ -6,8 +6,8 @@ from Prediction.Predictors import SlopePredictor, NaivePredictor, BATMobilePredi
 from Positioning.WaypointProvider import WaypointProvider
 import numpy as np
 import time
-import sched
 import ipaddress as ip
+from threading import Timer
 
 WP_REACHED_M = 25.0
 V_MAX_KMH = 50.0
@@ -21,6 +21,7 @@ class Parrod():
     lastSetOfNeighbors:list = []
     m_Gamma_Mob: float = 0.0
     histCoord: list = []
+    running: bool = False
 
     def __init__(self, config: dict, transmissionRange_m: float):
         self.txRange_m = transmissionRange_m
@@ -28,7 +29,6 @@ class Parrod():
         self.mhChirp = MultiHopChirp()
         self.mhChirpInterval_s = config["mhChirpInterval"]
         self.neighborReliabilityTimeout = config["neighborReliabilityTimeout"]
-        self.mhChirpReminder = sched.scheduler(time.time, time.sleep)
 
 
         self.qFctAlpha = config["qFctAlpha"]
@@ -36,7 +36,6 @@ class Parrod():
         self.maxHops = config["maxHops"]
         self.historySize = config["historySize"]
         self.rescheduleRoutesOnTimeout = config["rescheduleRoutesOnTimeout"]
-        self.destinationToUpdateSchedule = sched.scheduler(time.time, time.sleep)
         self.predictionMethod = config["predictionMethod"]
         self.waypointProvider = config["waypointProvider"]
         self.ipAddress = int(ip.IPv4Address(config["ipAddress"]))
@@ -54,11 +53,12 @@ class Parrod():
     def start(self):
         print("Starting services")
         self.udp.listen()
-        self.mhChirpReminder.enter(self.mhChirpInterval_s, 1, lambda: self.sendMultiHopChirp())
-        self.mhChirpReminder.run()
+        self.running = True
+        Timer(self.mhChirpInterval_s, self.sendMultiHopChirp, ()).start()
 
     def terminate(self):
         self.udp.terminate()
+        self.running = False
     '''
     Brain functions
     '''
@@ -143,10 +143,11 @@ class Parrod():
             t = 0.0 if (t2 >= 0.0 or (t2 < 0.0 and t1 < 0.0)) else t1
 
         if origin != 0 and self.rescheduleRoutesOnTimeout and t2 >= 0.0:
-            self.destinationToUpdateSchedule.enter(t2, 1, lambda: self.refreshRoutingTable(origin))
+            if self.running:
+                Timer(t2, self.refreshRoutingTable, (origin))
         elif origin != 0 and self.rescheduleRoutesOnTimeout and t2 <= 0.0 and t1 > 0.0 and t1 < 1.0:
-            self.destinationToUpdateSchedule.enter(t1, 1, lambda: self.refreshRoutingTable(origin))
-        self.destinationToUpdateSchedule.run()
+            if self.running:
+                Timer(t1, self.refreshRoutingTable, (origin))
 
         return t
 
@@ -360,7 +361,8 @@ class Parrod():
         chirp["HopCount"] = self.maxHops
 
         self.udp.broadcastData(self.mhChirp.serialize(chirp))
-        self.mhChirpReminder.enter(self.mhChirpInterval_s, 1, lambda: self.sendMultiHopChirp())
+        if self.running:
+            Timer(self.mhChirpInterval_s, self.sendMultiHopChirp, ()).start()
 
     def getNextSquNr(self) -> int:
         if not self.__squNr < 2**16 - 1:
