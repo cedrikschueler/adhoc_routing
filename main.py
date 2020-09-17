@@ -29,9 +29,10 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
 
     # Network settings
     config["ifname"] = "wlp2s0"
-    config["ipAddress"] = "192.168.178.27"
+    config["ipAddress"] = "20.0.0.1"
 
     # UDP settings
+    config["broadcastAddress"] = "20.0.0.255"
     config["bcPort"] = 1801
     config["bufferSize"] = 1460
 
@@ -49,8 +50,8 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     traffic = {
         "CBR": 2.0,
         "MTU": 1460,
-        "Sender": "192.168.178.27",
-        "Destination": "192.168.178.24",
+        "Sender": "20.0.0.3",
+        "Destination": "20.0.0.7",
         "Port": 1901,
         "Filename": f'{config["experimentName"]}_eval.csv'
     }
