@@ -63,7 +63,7 @@ class RoutingTable:
         :param gw: Gateway IPv4Address
         :return:
         '''
-        echo = subprocess.Popen(["ip", "route", "replace", dest, "via", gw, "dev", self.ifname], stdout=subprocess.PIPE)
+        echo = subprocess.Popen(["ip", "route", "replace", dest, "via", gw, "dev", self.ifname, "onlink"], stdout=subprocess.PIPE)
         return 0
 
     def __del_route(self, dest, gw):

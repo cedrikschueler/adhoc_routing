@@ -49,3 +49,9 @@ Where `wlp2s0` is the wireless interface
 ``` bash
 $ sudo iptables -t nat -A POSTROUTING -o wlp2s0 -j MASQUERADE
 ```
+
+## 5) Invalidate default Gateway
+To ensure that only the routing is responsible for successfull transmissions, you might want to invalidate the default gateway.
+```
+ip route replace 20.0.0.0/24 via 20.0.0.99 dev wlp2s0 onlink
+```
