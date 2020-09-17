@@ -1,11 +1,3 @@
-abc
-gpsd
+gpsd-py3
 ipaddress
-multiprocessing
 numpy
-sched
-socket
-struct
-subprocess
-sys
-time
