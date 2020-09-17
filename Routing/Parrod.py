@@ -45,7 +45,7 @@ class Parrod():
 
         self.bcPort = config["bcPort"]
         self.bufferSize = config["bufferSize"]
-        self.udp = UDPManager(self.bcPort, options["broadcastAddress"], self.bufferSize)
+        self.udp = UDPManager(self.bcPort, config["broadcastAddress"], self.bufferSize)
         self.udp.subscribe(self.handleMessageWhenUp)
 
         self.gnssUpdateInterval = config["gnssUpdateInterval"]
