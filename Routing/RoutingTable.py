@@ -76,6 +76,15 @@ class RoutingTable:
         echo = subprocess.Popen(["ip", "route", "delete", dest, "via", gw, "dev", self.ifname], stdout=subprocess.PIPE)
         return 0
 
+    def invalidateRoutingTable(self, node: int=99):
+        '''
+        Invalides the routing table initially by setting the default gateway to a non-existing node
+        :param node: Node ID in subnet that is *not* existing. Default: 99 -> 20.0.0.99
+        :return:
+        '''
+        ip = f'20.0.0.{node}'
+        echo = subprocess.Popen(f'ip route replace 20.0.0.0/24 via {ip} dev {self.ifname} onlink'.split(' '), stdout=subprocess.PIPE)
+
 if __name__ == "__main__":
     rt = RoutingTable("wlp2s0")
     route = {

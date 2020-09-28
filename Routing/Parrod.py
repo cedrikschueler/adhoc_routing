@@ -52,6 +52,7 @@ class Parrod():
 
     def start(self):
         print("Starting services")
+        self.rt.invalidateRoutingTable()
         self.udp.listen()
         self.running = True
         Timer(self.mhChirpInterval_s, self.sendMultiHopChirp, ()).start()
