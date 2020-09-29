@@ -5,7 +5,8 @@ import time
 from Routing.UDPManager import UDPManager
 from Positioning.GNSSReceiver import GNSSReceiver
 
-def Station(ref: dict, file: str):
+def Mobile(ref: dict, file: str):
+    t0 = time.time()
     if file != "":
         f = open(file, "a")
         f.write('t,d\n')
@@ -17,7 +18,7 @@ def Station(ref: dict, file: str):
         d = np.linalg.norm(recvPos - pos)
         if file != "":
             f = open(file, "a")
-            f.write(f'{time.time()},{d}\n')
+            f.write(f'{time.time() -t0},{d}\n')
             f.close()
 
 
@@ -27,7 +28,7 @@ def Station(ref: dict, file: str):
     udp.listen()
 
 
-def Mobile(ref: dict, t_sampling: float):
+def Station(ref: dict, t_sampling: float):
     gnss = GNSSReceiver(ref)
     udp = UDPManager(1801, "20.0.0.255", 1460)
 
@@ -48,15 +49,28 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    referencePoint = {
-        "lon": float(args.longitude),
-        "lat": float(args.latitude),
-        "alt": float(args.altitude)
+    ref_OHParkpplatz = {
+        "lat": 51.49051416,
+        "lon": 7.41436899,
+        "alt": 106.6
     }
 
+    ref_KoelnerDom = {
+        "lat": 51.49150,
+        "lon": 7.41340,
+        "alt": 60.0
+    }
+
+    ref_Sportplatz = {
+        "lat": 51.31901,
+        "lon": 7.99801,
+        "alt": 280.0
+    }
+
+    referencePoint = ref_OHParkpplatz
     if args.role == "STATION":
-        Station(referencePoint, args.file)
+        Station(referencePoint, args.interval)
     elif args.role == "MOBILE":
-        Mobile(referencePoint, args.interval)
+        Mobile(referencePoint, args.file)
     else:
         raise Exception("No valid role specified")
