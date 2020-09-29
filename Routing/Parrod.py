@@ -151,10 +151,10 @@ class Parrod():
 
         if origin != 0 and self.rescheduleRoutesOnTimeout and t2 >= 0.0:
             if self.running:
-                Timer(t2, self.refreshRoutingTable, (origin))
+                threading.Timer(t2, self.refreshRoutingTable, (origin)).start()
         elif origin != 0 and self.rescheduleRoutesOnTimeout and t2 <= 0.0 and t1 > 0.0 and t1 < 1.0:
             if self.running:
-                Timer(t1, self.refreshRoutingTable, (origin))
+                threading.Timer(t1, self.refreshRoutingTable, (origin)).start()
 
         return t
 
@@ -209,12 +209,12 @@ class Parrod():
                 currentSetOfNeighbors.append(it)
 
         for o in self.lastSetOfNeighbors:
-            if o in currentSetOfNeighbors:
+            if o not in currentSetOfNeighbors:
                 exclusive += 1
             merged += 1
 
         for n in currentSetOfNeighbors:
-            if n in self.lastSetOfNeighbors:
+            if n not in self.lastSetOfNeighbors:
                 exclusive += 1
                 merged += 1
 
@@ -353,7 +353,7 @@ class Parrod():
         p = self.mobility.getCurrentPosition()
         v = (forecast - p) / (self.neighborReliabilityTimeout if self.neighborReliabilityTimeout != 0 else 1.0)
 
-        self.trackPosition(np.array([time.time(), p[0], p[1], p[2]]))
+        self.trackPosition((time.time(), p[0], p[1], p[2]))
 
         chirp["X"] = p[0]
         chirp["Y"] = p[1]
