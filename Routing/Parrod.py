@@ -7,7 +7,7 @@ from Positioning.WaypointProvider import WaypointProvider
 import numpy as np
 import time
 import ipaddress as ip
-from threading import Timer
+import threading
 
 WP_REACHED_M = 25.0
 V_MAX_KMH = 50.0
@@ -55,7 +55,13 @@ class Parrod():
         self.rt.invalidateRoutingTable()
         self.udp.listen()
         self.running = True
-        Timer(self.mhChirpInterval_s, self.sendMultiHopChirp, ()).start()
+        self.chirpThread = threading.Thread(target=self.runChirping)
+        self.chirpThread.start()
+
+    def runChirping(self):
+        while self.running:
+            self.sendMultiHopChirp()
+            time.sleep(self.mhChirpInterval_s)
 
     def terminate(self):
         self.udp.terminate()
@@ -84,7 +90,7 @@ class Parrod():
         discounts.append(self.Vi[hop]["Gamma_Mob"])
 
         return (1 - self.qFctAlpha)*self.Gateways[target][hop]["Q"] + \
-               self.qFctAlpha*self.combineDiscounts(discounts)* \
+               self.qFctAlpha*self.combineDiscounts(discounts) * \
                self.Gateways[target][hop]["V"]
 
     def getMaxValueFor(self, target: int) -> float:
