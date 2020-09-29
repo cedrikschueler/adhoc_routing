@@ -13,6 +13,9 @@ WP_REACHED_M = 25.0
 V_MAX_KMH = 50.0
 PREDICTOR_STEPSIZE = 0.1
 
+def intToIpv4(inp: int) -> str:
+    return ip.IPv4Address(inp).__str__()
+
 class Parrod():
 
     __squNr: int = 0
@@ -29,7 +32,6 @@ class Parrod():
         self.mhChirp = MultiHopChirp()
         self.mhChirpInterval_s = config["mhChirpInterval"]
         self.neighborReliabilityTimeout = config["neighborReliabilityTimeout"]
-
 
         self.qFctAlpha = config["qFctAlpha"]
         self.qFctGamma = config["qFctGamma"]
@@ -51,7 +53,8 @@ class Parrod():
         self.mobility = GNSSReceiver(config["gpsReferencePoint"], config["experimentName"])
 
     def start(self):
-        print("Starting services")
+        self.t0 = time.time()
+        print(f'{(time.time() - self.t0):.3f}: [PARROD] Starting Services')
         self.rt.invalidateRoutingTable()
         self.udp.listen()
         self.running = True
@@ -66,6 +69,7 @@ class Parrod():
     def terminate(self):
         self.udp.terminate()
         self.running = False
+        print(f'{(time.time() - self.t0):.3f}: [PARROD] Parrod Terminated')
     '''
     Brain functions
     '''
@@ -165,6 +169,9 @@ class Parrod():
         if (len(msg) == self.mhChirp.length()):
             msgData = self.mhChirp.deserialize(msg)
             remainingHops = self.handleIncomingMultiHopChirp(msgData)
+            if msgData["Origin"] != self.ipAddress:
+                print(f'{(time.time() - self.t0):.3f}: [PARROD] Received MSG from {intToIpv4(msgData["Origin"])} via {intToIpv4(msgData["Gateway"])} with V: {msgData["Value"]}')
+
             if remainingHops > 0 and self.postliminaryChecksPassed(msgData["Origin"], msgData["Hop"]):
                 msgData["Value"] = self.getMaxValueFor(msgData["Origin"])
                 msgData["CreationTime"] = time.time()
@@ -184,6 +191,7 @@ class Parrod():
 
                 msgData["GammaMob"] = self.m_Gamma_Mob
                 msgData["HopCount"] = remainingHops
+                print(f'{(time.time() - self.t0):.3f}: [PARROD] Forwarding MSG from {intToIpv4(msgData["Origin"])} with {remainingHops} remaining hops')
 
                 self.udp.broadcastData(self.mhChirp.serialize(msgData))
 

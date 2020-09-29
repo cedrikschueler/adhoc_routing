@@ -9,6 +9,7 @@ class RoutingTable:
     Routes = dict()
     def __init__(self, ifname):
         self.ifname = ifname
+        self.t0 = time.time()
 
     def purge(self):
         '''
@@ -17,6 +18,7 @@ class RoutingTable:
         '''
         for destination in list(self.Routes.keys()):
             if self.Routes[destination]["ExpiryTime"] < time.time():
+                print(f'{(time.time() - self.t0):.3f}: [RT] Delete Route to {intToIpv4(destination)} via {intToIpv4(self.Routes[destination]["Gateway"])} due to Expiration Time')
                 self.__del_route(intToIpv4(destination), intToIpv4(self.Routes[destination]["Gateway"]))
                 del self.Routes[destination]
 
@@ -55,6 +57,7 @@ class RoutingTable:
         else:
             self.Routes[e["Destination"]] = e
             self.__add_route(intToIpv4(e["Destination"]), intToIpv4(e["Gateway"]))
+            print(f'{(time.time() - self.t0):.3f}: [RT] Add Route to {intToIpv4(e["Destination"])} via {intToIpv4(e["Gateway"])}')
 
     def __add_route(self, dest, gw):
         '''
@@ -84,6 +87,8 @@ class RoutingTable:
         '''
         ip = f'20.0.0.{node}'
         echo = subprocess.Popen(f'ip route replace 20.0.0.0/24 via {ip} dev {self.ifname} onlink'.split(' '), stdout=subprocess.PIPE)
+        print(f'{(time.time() - self.t0):.3f}: [RT] Invalidate Routing Table via {ip}')
+
 
 if __name__ == "__main__":
     rt = RoutingTable("wlp2s0")
