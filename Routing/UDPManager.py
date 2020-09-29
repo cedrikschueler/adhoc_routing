@@ -1,17 +1,18 @@
 import socket
-import multiprocessing
+import threading
 import time
 
 ENCODING = "utf-8"
 
-class UDPManager(multiprocessing.Process):
+class UDPManager(threading.Thread):
 
     def __init__(self, port: int, broadcastAddress:str, buffersize=10000) -> None:
-        multiprocessing.Process.__init__(self)
+        threading.Thread.__init__(self)
         self.broadcastAddress = broadcastAddress
         self.port = port
         self.bufferSize = buffersize
 
+        self.running = False
         self.subscriptions = []
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
@@ -32,6 +33,7 @@ class UDPManager(multiprocessing.Process):
         :return:
         '''
         self.socket.bind(("",  self.port))
+        self.running = True
         self.start()
 
     def run(self):
@@ -41,13 +43,21 @@ class UDPManager(multiprocessing.Process):
         :return:
         '''
         try:
-            while True:
+            while self.running:
                 data, _ = self.socket.recvfrom(self.bufferSize)
                 if len(self.subscriptions) != 0:
                     for c in self.subscriptions:
                         c(data)
         except StopIteration:
             pass
+
+    def terminate(self):
+        '''
+        Sets the running flag to false and joins the Thread
+        :return:
+        '''
+        self.running = False
+        self.join()
 
     def broadcastData(self, data: bytearray):
         '''
