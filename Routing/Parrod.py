@@ -368,8 +368,6 @@ class Parrod():
         chirp["HopCount"] = self.maxHops
 
         self.udp.broadcastData(self.mhChirp.serialize(chirp))
-        if self.running:
-            Timer(self.mhChirpInterval_s, self.sendMultiHopChirp, ()).start()
 
     def getNextSquNr(self) -> int:
         if not self.__squNr < 2**16 - 1:
