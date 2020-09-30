@@ -1,10 +1,12 @@
 from Routing.Parrod import Parrod
 from Traffic.TrafficGenerator import TrafficGenerator, TrafficReceiver
 import time
+import subprocess
+import argparse
 
-TRANSMISSION_RANGE = 230.0
+TRANSMISSION_RANGE = 80.0
 
-def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0):
+def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0, name: str = ""):
     routingProtocol = None
     trafficInstance = None
 
@@ -12,7 +14,7 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     Parametrize Routing Protocol
     """
     config = dict()
-    config["experimentName"] = "endToEnd_16092020"
+    config["experimentName"] = name
 
     # Parrod config
     config["mhChirpInterval"] = 0.5
@@ -28,8 +30,8 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     config["waypointProvider"] = ""
 
     # Network settings
-    config["ifname"] = "wlp2s0"
-    config["ipAddress"] = "20.0.0.1"
+    config["ifname"] = "wlan0"
+    config["ipAddress"] = "20.0.0.7"
 
     # UDP settings
     config["broadcastAddress"] = "20.0.0.255"
@@ -39,9 +41,9 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     # GNSS Configuration
     config["gnssUpdateInterval"] = 1.0
     config["gpsReferencePoint"] = {
-        "lat": 50.941220,
-        "lon": 6.957029,
-        "alt": 40.0
+        "lat": 51.31901,
+        "lon": 7.99801,
+        "alt": 280.0
     }
 
     """
@@ -56,12 +58,14 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
         "Filename": f'{config["experimentName"]}_eval.csv'
     }
 
-    if config["ipAddress"] == traffic["Sender"]:
-        trafficInstance = TrafficGenerator(traffic["CBR"], traffic["Destination"], MTU_used_byte=traffic["MTU"], port=traffic["Port"])
-    elif config["ipAddress"] == traffic["Destination"]:
-        trafficInstance = TrafficReceiver(traffic["Sender"], port=traffic["Port"], bufferSize=traffic["MTU"], filename=traffic["Filename"])
-
     routingProtocol = Parrod(config, TRANSMISSION_RANGE)
+
+    if config["ipAddress"] == traffic["Sender"]:
+        subprocess.Popen(f'iperf3 -c {traffic["Sender"]} -b 2m -l {traffic["MTU"]} -u -t {timeLimit} -p {traffic["Port"]}'.split(' '), stdout=subprocess.PIPE)
+    elif config["ipAddress"] == traffic["Destination"]:
+        #subprocess.Popen(f'iperf3 -s -p {traffic["Port"]} -J --logfile {config["experimentName"]}.json'.split(' '), stdout=subprocess.PIPE)
+        pass
+        # Open server manually!
 
     # After everything is set up, wait to start the experiment
     time.sleep(waitTimeBeforeStart)
@@ -83,6 +87,9 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
 
 
 if __name__ == "__main__":
-    Experiment(timeLimit=300, waitTimeBeforeStart=10.0, trafficDelay=5.0)
+    parser = argparse.ArgumentParser(description='Parrod')
+    parser.add_argument('-n', dest='name', type=str, help='Specify a role for this agent.', required=True)
+    args = parser.parse_args()
+    Experiment(timeLimit=180, waitTimeBeforeStart=10.0, trafficDelay=5.0, name=args.name)
 
 
