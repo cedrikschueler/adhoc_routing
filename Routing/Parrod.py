@@ -8,10 +8,14 @@ import numpy as np
 import time
 import ipaddress as ip
 import threading
+import random
 
 WP_REACHED_M = 25.0
 V_MAX_KMH = 50.0
 PREDICTOR_STEPSIZE = 0.1
+
+MAX_JITTER = 0.1
+BROADCAST_DELAY = 0.01
 
 def intToIpv4(inp: int) -> str:
     return ip.IPv4Address(inp).__str__()
@@ -62,9 +66,10 @@ class Parrod():
         self.chirpThread.start()
 
     def runChirping(self):
+        time.sleep(random.rand()*MAX_JITTER)
         while self.running:
             self.sendMultiHopChirp()
-            time.sleep(self.mhChirpInterval_s)
+            time.sleep(self.mhChirpInterval_s + random.rand()*BROADCAST_DELAY)
 
     def terminate(self):
         self.udp.terminate()
