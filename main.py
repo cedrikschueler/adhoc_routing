@@ -41,9 +41,9 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     # GNSS Configuration
     config["gnssUpdateInterval"] = 1.0
     config["gpsReferencePoint"] = {
-        "lat": 51.31901,
-        "lon": 7.99801,
-        "alt": 280.0
+        "lat": 51.49051416,
+        "lon": 7.41436899,
+        "alt": 106.6
     }
 
     """
