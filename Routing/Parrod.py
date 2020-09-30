@@ -175,7 +175,7 @@ class Parrod():
             msgData = self.mhChirp.deserialize(msg)
             remainingHops = self.handleIncomingMultiHopChirp(msgData)
             if msgData["Origin"] != self.ipAddress:
-                print(f'{(time.time() - self.t0):.3f}: [PARROD] Received MSG from {intToIpv4(msgData["Origin"])} via {intToIpv4(msgData["Gateway"])} with V: {msgData["Value"]}')
+                print(f'{(time.time() - self.t0):.3f}: [PARROD] Received MSG from {intToIpv4(msgData["Origin"])} via {intToIpv4(msgData["Hop"])} with V: {msgData["Value"]}')
 
             if remainingHops > 0 and self.postliminaryChecksPassed(msgData["Origin"], msgData["Hop"]):
                 msgData["Value"] = self.getMaxValueFor(msgData["Origin"])
