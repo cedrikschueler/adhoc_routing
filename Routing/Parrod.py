@@ -45,6 +45,7 @@ class Parrod():
         self.predictionMethod = config["predictionMethod"]
         self.waypointProvider = config["waypointProvider"]
         self.ipAddress = int(ip.IPv4Address(config["ipAddress"]))
+        self.coordinatorAddress = config["coordinatorAddress"]
 
         self.rt = RoutingTable(config["ifname"])
 
@@ -59,7 +60,7 @@ class Parrod():
     def start(self):
         self.t0 = time.time()
         print(f'{(time.time() - self.t0):.3f}: [PARROD] Starting Services')
-        self.rt.invalidateRoutingTable()
+        self.rt.invalidateRoutingTable(self.coordinatorAddress)
         self.udp.listen()
         self.running = True
         self.chirpThread = threading.Thread(target=self.runChirping)
@@ -184,7 +185,7 @@ class Parrod():
 
                 # Get location
                 forecast = self.forecastPosition()
-                p = self.mobility.getCurrentPosition()
+                p = self.histCoord[-1] if len(self.histCoord > 0) else np.array((0.0, 0.0, 0.0))
                 v = (forecast - p)/(self.neighborReliabilityTimeout if self.neighborReliabilityTimeout != 0 else 1.0)
 
                 msgData["X"] = p[0]
@@ -256,36 +257,23 @@ class Parrod():
 
         hopCount = chirp["HopCount"]
 
+        if origin == self.ipAddress:
+            return 0
+
         knownNeighbor = gateway in self.Vi.keys()
-        if knownNeighbor and origin != self.ipAddress and self.Vi[gateway]["squNr"] <= squNr:
+        if knownNeighbor and origin != self.ipAddress:
             self.Vi[gateway]["lastSeen"] = time.time()
             self.Vi[gateway]["coord"] = np.array([x, y, z])
             self.Vi[gateway]["velo"] = np.array([vx, vy, vz])
-            self.Vi[gateway]["futurePosition"] = np.array([x, y, z])
             self.Vi[gateway]["Gamma_Mob"] = gamma_mob
             self.Vi[gateway]["Gamma_Pos"] = self.Gamma_Pos(gateway, 0)
-            self.Vi[gateway]["squNr"] = squNr
         else:
             self.Vi[gateway] = dict()
             self.Vi[gateway]["lastSeen"] = time.time()
             self.Vi[gateway]["coord"] = np.array([x, y, z])
             self.Vi[gateway]["velo"] = np.array([vx, vy, vz])
-            self.Vi[gateway]["futurePosition"] = np.array([x, y, z])
             self.Vi[gateway]["Gamma_Mob"] = gamma_mob
-            self.Vi[gateway]["squNr"] = squNr
-            #if (origin == gateway) {
-            #   nj->second->regRec();
-            #}
             self.Vi[gateway]["Gamma_Pos"] = self.Gamma_Pos(gateway, 0)
-
-        if origin == self.ipAddress:
-            #if (maxHops - hopCount == 1) {
-            #// Only count direct echo
-            #Vi.at(gateway)->regEcho(squNr);
-            #}
-            return 0
-        elif knownNeighbor and self.Vi[gateway]["squNr"] > squNr:
-            return 0
 
         if origin not in self.Gateways.keys():
             self.Gateways[origin] = dict()
@@ -357,16 +345,15 @@ class Parrod():
     def sendMultiHopChirp(self):
         chirp = dict()
         chirp["Origin"] = self.ipAddress
-        chirp["CreationTime"] = time.time()
         chirp["Hop"] = self.ipAddress
         chirp["SquNr"] = self.getNextSquNr()
 
         # Get location
-        forecast = self.forecastPosition()
         p = self.mobility.getCurrentPosition()
+        self.trackPosition((time.time(), p[0], p[1], p[2]))
+        forecast = self.forecastPosition()
         v = (forecast - p) / (self.neighborReliabilityTimeout if self.neighborReliabilityTimeout != 0 else 1.0)
 
-        self.trackPosition((time.time(), p[0], p[1], p[2]))
 
         chirp["X"] = p[0]
         chirp["Y"] = p[1]
