@@ -57,9 +57,12 @@ class Parrod():
         self.gnssUpdateInterval = config["gnssUpdateInterval"]
         self.mobility = GNSSReceiver(config["gpsReferencePoint"], config["experimentName"])
 
+        self.verbose = config["verbose"]
+
     def start(self):
         self.t0 = time.time()
-        print(f'{(time.time() - self.t0):.3f}: [PARROD] Starting Services')
+        if self.verbose:
+            print(f'{(time.time() - self.t0):.3f}: [PARROD] Starting Services')
         self.rt.invalidateRoutingTable(self.coordinatorAddress)
         self.udp.listen()
         self.running = True
@@ -75,7 +78,8 @@ class Parrod():
     def terminate(self):
         self.udp.terminate()
         self.running = False
-        print(f'{(time.time() - self.t0):.3f}: [PARROD] Parrod Terminated')
+        if self.verbose:
+            print(f'{(time.time() - self.t0):.3f}: [PARROD] Parrod Terminated')
     '''
     Brain functions
     '''
@@ -175,7 +179,7 @@ class Parrod():
         if (len(msg) == self.mhChirp.length()):
             msgData = self.mhChirp.deserialize(msg)
             remainingHops = self.handleIncomingMultiHopChirp(msgData)
-            if msgData["Origin"] != self.ipAddress:
+            if self.verbose and msgData["Origin"] != self.ipAddress:
                 print(f'{(time.time() - self.t0):.3f}: [PARROD] Received MSG from {intToIpv4(msgData["Origin"])} via {intToIpv4(msgData["Hop"])} with V: {msgData["Value"]}')
 
             if remainingHops > 0 and self.postliminaryChecksPassed(msgData["Origin"], msgData["Hop"]):
@@ -197,7 +201,8 @@ class Parrod():
 
                 msgData["GammaMob"] = self.m_Gamma_Mob
                 msgData["HopCount"] = remainingHops
-                print(f'{(time.time() - self.t0):.3f}: [PARROD] Forwarding MSG from {intToIpv4(msgData["Origin"])} with {remainingHops} remaining hops')
+                if self.verbose:
+                    print(f'{(time.time() - self.t0):.3f}: [PARROD] Forwarding MSG from {intToIpv4(msgData["Origin"])} with {remainingHops} remaining hops')
 
                 self.udp.broadcastData(self.mhChirp.serialize(msgData))
 
@@ -391,12 +396,10 @@ class Parrod():
                 pred = SlopePredictor(int(self.neighborReliabilityTimeout/self.mhChirpInterval_s), self.gnssUpdateInterval)
             elif self.predictionMethod == "naive":
                 pred = NaivePredictor(int(self.neighborReliabilityTimeout/self.mhChirpInterval_s))
-            elif self.predictionMethod == "batman":
+            elif self.predictionMethod == "waypoint":
                 pred = BATMobilePredictor(int(self.neighborReliabilityTimeout/self.mhChirpInterval_s), self.gnssUpdateInterval, WP_REACHED_M, V_MAX_KMH) # todo: what if gnssUpdateInterval and mhChirp differ?
-            elif self.predictionMethod == "intbat":
-                pred = InterpolatedBatman(int(self.neighborReliabilityTimeout/self.mhChirpInterval_s), self.gnssUpdateInterval, WP_REACHED_M, V_MAX_KMH, PREDICTOR_STEPSIZE)
             else:
-                valid = ["batman", "intbat", "naive", "slope"]
+                valid = ["slope", "waypoint", "naive"]
                 raise Exception(f"No valid prediction method chosen!\nSelect from: {valid}")
 
             if self.waypointProvider is not "":

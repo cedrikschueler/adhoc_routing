@@ -24,7 +24,7 @@ ref_Sportplatz = {
     "alt": 280.0
 }
 
-def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0, name: str = ""):
+def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0, verbose: bool = False, name: str = ""):
     routingProtocol = None
     trafficInstance = None
 
@@ -33,7 +33,7 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     """
     config = dict()
     config["experimentName"] = name
-
+    config["verbose"] = verbose
     # Parrod config
     config["mhChirpInterval"] = 0.5
     config["neighborReliabilityTimeout"] = 2.5
@@ -117,7 +117,8 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Parrod')
     parser.add_argument('-n', dest='name', type=str, help='Specify a name for this experiment.', required=True)
+    parser.add_argument('-v', dest='verbose', type=bool, help='Print outputs', default=True)
     args = parser.parse_args()
-    Experiment(timeLimit=900, waitTimeBeforeStart=10.0, trafficDelay=0.0, name=args.name)
+    Experiment(timeLimit=900, waitTimeBeforeStart=10.0, trafficDelay=0.0, verbose=args.verbose, name=args.name)
 
 
