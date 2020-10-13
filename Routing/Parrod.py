@@ -70,10 +70,10 @@ class Parrod():
         self.chirpThread.start()
 
     def runChirping(self):
-        time.sleep(random.rand()*MAX_JITTER)
+        time.sleep(random.random()*MAX_JITTER)
         while self.running:
             self.sendMultiHopChirp()
-            time.sleep(self.mhChirpInterval_s + random.rand()*BROADCAST_DELAY)
+            time.sleep(self.mhChirpInterval_s + random.random()*BROADCAST_DELAY)
 
     def terminate(self):
         self.udp.terminate()
@@ -138,7 +138,7 @@ class Parrod():
         vj = self.Vi[neighbor]["velo"]
         pj = self.Vi[neighbor]["coord"] + vj*t_elapsed_since_last_hello
 
-        pi = self.mobility.getCurrentPosition()
+        pi = self.histCoord[-1][1:] if len(self.histCoord) > 0 else np.array((0.0, 0.0, 0.0))
         vi = (self.forecastPosition() - pi)/(self.neighborReliabilityTimeout if self.neighborReliabilityTimeout != 0 else 1.0)
 
         deltaP = pj - pi
@@ -179,7 +179,7 @@ class Parrod():
         if (len(msg) == self.mhChirp.length()):
             msgData = self.mhChirp.deserialize(msg)
             remainingHops = self.handleIncomingMultiHopChirp(msgData)
-            if self.verbose and msgData["Origin"] != self.ipAddress:
+            if self.verbose and msgData["Origin"] != self.ipAddress and msgData["Gateway"] != self.ipAddress:
                 print(f'{(time.time() - self.t0):.3f}: [PARROD] Received MSG from {intToIpv4(msgData["Origin"])} via {intToIpv4(msgData["Hop"])} with V: {msgData["Value"]}')
 
             if remainingHops > 0 and self.postliminaryChecksPassed(msgData["Origin"], msgData["Hop"]):
@@ -189,7 +189,7 @@ class Parrod():
 
                 # Get location
                 forecast = self.forecastPosition()
-                p = self.histCoord[-1] if len(self.histCoord > 0) else np.array((0.0, 0.0, 0.0))
+                p = self.histCoord[-1][1:] if len(self.histCoord > 0) else np.array((0.0, 0.0, 0.0))
                 v = (forecast - p)/(self.neighborReliabilityTimeout if self.neighborReliabilityTimeout != 0 else 1.0)
 
                 msgData["X"] = p[0]
@@ -244,7 +244,7 @@ class Parrod():
         origin = chirp["Origin"]
         gateway = chirp["Hop"]
 
-        if gateway == self.ipAddress:
+        if gateway == self.ipAddress or origin == self.ipAddress:
             # Return 0 if this message is an own message (This case is handled by OMNeT++ in the simulation)
             return 0
 
@@ -261,9 +261,6 @@ class Parrod():
         squNr = chirp["SquNr"]
 
         hopCount = chirp["HopCount"]
-
-        if origin == self.ipAddress:
-            return 0
 
         knownNeighbor = gateway in self.Vi.keys()
         if knownNeighbor and origin != self.ipAddress:
@@ -318,9 +315,8 @@ class Parrod():
         if route == None and bestHop == 0:
             return
         else:
-            if route is not None and route["Gateway"] == bestHop:
-                return
-            if route is not None:
+            if route is not None and route["Gateway"] != bestHop:
+                # Only remove Route if its really not valid anymore
                 self.rt.removeRoute(route)
             if bestHop == 0:
                 return
@@ -328,7 +324,7 @@ class Parrod():
                 e = dict()
                 e["Destination"] = origin
                 e["Gateway"] = bestHop
-                e["ExpiryTime"] = time.time() + min(self.neighborReliabilityTimeout, self.Vi[bestHop]["Gamma_Pos"])
+                e["ExpiryTime"] = min(self.neighborReliabilityTimeout, self.Vi[bestHop]["Gamma_Pos"])
                 e["Metric"] = self.Gateways[origin][bestHop]["Q"]
 
                 self.rt.addRoute(e)

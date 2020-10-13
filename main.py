@@ -35,8 +35,8 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     config["experimentName"] = name
     config["verbose"] = verbose
     # Parrod config
-    config["mhChirpInterval"] = 0.5
-    config["neighborReliabilityTimeout"] = 2.5
+    config["mhChirpInterval"] = 1.0
+    config["neighborReliabilityTimeout"] = 2.0
     config["qFctAlpha"] = 0.4
     config["qFctGamma"] = 0.9
     config["maxHops"] = 32

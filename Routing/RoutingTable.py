@@ -53,8 +53,10 @@ class RoutingTable:
         '''
         dst = e["Destination"]
         if dst in self.Routes.keys():
-            raise Exception("Destination is already registered!")
+            # This is meant to only update the expiry time
+            self.Routes[dst]["ExpiryTime"] = e["ExpiryTime"] + time.time()
         else:
+            e["ExpiryTime"] += time.time()
             self.Routes[e["Destination"]] = e
             self.__add_route(intToIpv4(e["Destination"]), intToIpv4(e["Gateway"]))
             print(f'{(time.time() - self.t0):.3f}: [RT] Add Route to {intToIpv4(e["Destination"])} via {intToIpv4(e["Gateway"])}')
