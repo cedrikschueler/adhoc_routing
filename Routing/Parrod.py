@@ -179,7 +179,7 @@ class Parrod():
         if (len(msg) == self.mhChirp.length()):
             msgData = self.mhChirp.deserialize(msg)
             remainingHops = self.handleIncomingMultiHopChirp(msgData)
-            if self.verbose and msgData["Origin"] != self.ipAddress and msgData["Gateway"] != self.ipAddress:
+            if self.verbose and msgData["Origin"] != self.ipAddress and msgData["Hop"] != self.ipAddress:
                 print(f'{(time.time() - self.t0):.3f}: [PARROD] Received MSG from {intToIpv4(msgData["Origin"])} via {intToIpv4(msgData["Hop"])} with V: {msgData["Value"]}')
 
             if remainingHops > 0 and self.postliminaryChecksPassed(msgData["Origin"], msgData["Hop"]):
@@ -189,7 +189,7 @@ class Parrod():
 
                 # Get location
                 forecast = self.forecastPosition()
-                p = self.histCoord[-1][1:] if len(self.histCoord > 0) else np.array((0.0, 0.0, 0.0))
+                p = self.histCoord[-1][1:] if len(self.histCoord) > 0 else np.array((0.0, 0.0, 0.0))
                 v = (forecast - p)/(self.neighborReliabilityTimeout if self.neighborReliabilityTimeout != 0 else 1.0)
 
                 msgData["X"] = p[0]
