@@ -18,6 +18,12 @@ ref_KoelnerDom = {
     "alt": 60.0
 }
 
+ref_Giesbertpark = {
+    "lat": 50.96362,
+    "lon": 6.96375,
+    "alt": 50.0
+}
+
 ref_Sportplatz = {
     "lat": 51.31901,
     "lon": 7.99801,
@@ -41,7 +47,7 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     config["qFctGamma"] = 0.9
     config["maxHops"] = 32
     config["historySize"] = 5
-    config["rescheduleRoutesOnTimeout"] = True
+    config["rescheduleRoutesOnTimeout"] = False
 
     ## Mobility Prediction
     config["predictionMethod"] = "slope"
@@ -59,7 +65,7 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
 
     # GNSS Configuration
     config["gnssUpdateInterval"] = 1.0
-    config["gpsReferencePoint"] = ref_KoelnerDom
+    config["gpsReferencePoint"] = ref_Giesbertpark
 
     '''
     Traffic Generator is disabled!

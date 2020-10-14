@@ -166,7 +166,7 @@ class Parrod():
         if origin != 0 and self.rescheduleRoutesOnTimeout and t2 >= 0.0:
             if self.running:
                 threading.Timer(t2, self.refreshRoutingTable, (origin)).start()
-        elif origin != 0 and self.rescheduleRoutesOnTimeout and t2 <= 0.0 and t1 > 0.0 and t1 < 1.0:
+        elif origin != 0 and self.rescheduleRoutesOnTimeout and t2 <= 0.0 and t1 > 0.0 and t1 < self.neighborReliabilityTimeout:
             if self.running:
                 threading.Timer(t1, self.refreshRoutingTable, (origin)).start()
 
