@@ -315,8 +315,9 @@ class Parrod():
         if route == None and bestHop == 0:
             return
         else:
-            if route is not None and route["Gateway"] != bestHop:
+            if route is not None and bestHop == 0:
                 # Only remove Route if its really not valid anymore
+                # If it is just another hop, the add functionality will simply replace the entry, so no need for delete here
                 self.rt.removeRoute(route)
             if bestHop == 0:
                 return
