@@ -44,10 +44,10 @@ class UDPManager(threading.Thread):
         '''
         try:
             while self.running:
-                data, _ = self.socket.recvfrom(self.bufferSize)
+                data, addr = self.socket.recvfrom(self.bufferSize)
                 if len(self.subscriptions) != 0:
                     for c in self.subscriptions:
-                        c(data)
+                        c(data, addr)
         except StopIteration:
             pass
 
@@ -67,10 +67,14 @@ class UDPManager(threading.Thread):
         '''
         self.socket.sendto(data, (self.broadcastAddress, self.port))
 
+def subscriber(msg, adr):
+    print(adr)
+
 if __name__ == "__main__":
-    udp_mgr = UDPManager(1801)
+    udp_mgr = UDPManager(1801, "")
+    udp_mgr.subscribe(subscriber)
     udp_mgr.listen()
-    time.sleep(60)
+    time.sleep(180)
     exit()
     while 1:
         time.sleep(1)

@@ -20,6 +20,9 @@ BROADCAST_DELAY = 0.01
 def intToIpv4(inp: int) -> str:
     return ip.IPv4Address(inp).__str__()
 
+def Ipv4ToInt(inp: str) -> int:
+    return int(ip.IPv4Address(inp))
+
 class Parrod():
 
     __squNr: int = 0
@@ -100,7 +103,7 @@ class Parrod():
     def qFunction(self, hop: int, target: int) -> float:
         discounts = []
         discounts.append(self.qFctGamma)
-        discounts.append(min(1.0, np.sqrt(max(self.Gamma_Pos(hop), 0.0) / self.mhChirpInterval_s)))
+        discounts.append(min(1.0, np.sqrt(max(self.Gamma_Pos(hop), 0.0) / max(self.mhChirpInterval_s, self.neighborReliabilityTimeout))))
         discounts.append(self.Vi[hop]["Gamma_Mob"])
 
         return (1 - self.qFctAlpha)*self.Gateways[target][hop]["Q"] + \
@@ -112,7 +115,7 @@ class Parrod():
         if target in self.Gateways.keys():
             for act in self.Gateways[target].keys():
                 deltaT = time.time() - self.Gateways[target][act]["lastSeen"]
-                if (deltaT <= min(self.neighborReliabilityTimeout, self.Gamma_Pos(act))):
+                if (deltaT <= min(max(self.mhChirpInterval_s, self.neighborReliabilityTimeout), self.Gamma_Pos(act))):
                     res = max(res, self.qFunction(act, target))
         return res
 
@@ -123,7 +126,7 @@ class Parrod():
         if target in list(self.Gateways.keys()):
             for act in list(self.Gateways[target].keys()):
                 deltaT = time.time() - self.Gateways[target][act]["lastSeen"]
-                if (deltaT <= min(self.neighborReliabilityTimeout, self.Gamma_Pos(act))):
+                if (deltaT <= min(max(self.mhChirpInterval_s, self.neighborReliabilityTimeout), self.Gamma_Pos(act))):
                     if self.qFunction(act, target) > res:
                         res = self.qFunction(act, target)
                         a = act
@@ -175,9 +178,11 @@ class Parrod():
     '''
     Chirp functions
     '''
-    def handleMessageWhenUp(self, msg):
+    def handleMessageWhenUp(self, msg, addr):
         if (len(msg) == self.mhChirp.length()):
             msgData = self.mhChirp.deserialize(msg)
+            # Attach Hop to deserialized message for compability reasons
+            msgData["Hop"] = Ipv4ToInt(addr[0])
             remainingHops = self.handleIncomingMultiHopChirp(msgData)
             if self.verbose and msgData["Origin"] != self.ipAddress and msgData["Hop"] != self.ipAddress:
                 print(f'{(time.time() - self.t0):.3f}: [PARROD] Received MSG from {intToIpv4(msgData["Origin"])} via {intToIpv4(msgData["Hop"])} with V: {msgData["Value"]}')
@@ -204,6 +209,8 @@ class Parrod():
                 if self.verbose:
                     print(f'{(time.time() - self.t0):.3f}: [PARROD] Forwarding MSG from {intToIpv4(msgData["Origin"])} with {remainingHops} remaining hops')
 
+                # Delete hop entry again for compability
+                del msgData["Hop"]
                 self.udp.broadcastData(self.mhChirp.serialize(msgData))
 
 
@@ -325,7 +332,7 @@ class Parrod():
                 e = dict()
                 e["Destination"] = origin
                 e["Gateway"] = bestHop
-                e["ExpiryTime"] = min(self.neighborReliabilityTimeout, self.Vi[bestHop]["Gamma_Pos"])
+                e["ExpiryTime"] = min(max(self.mhChirpInterval_s, self.neighborReliabilityTimeout), self.Vi[bestHop]["Gamma_Pos"])
                 e["Metric"] = self.Gateways[origin][bestHop]["Q"]
 
                 self.rt.addRoute(e)
@@ -334,7 +341,7 @@ class Parrod():
         for target in list(self.Gateways.keys()):
             for act in list(self.Gateways[target]):
                 deltaT = time.time() - self.Gateways[target][act]["lastSeen"]
-                if deltaT > min(self.neighborReliabilityTimeout, self.Gamma_Pos(act)):
+                if deltaT > min(max(self.mhChirpInterval_s, self.neighborReliabilityTimeout), self.Gamma_Pos(act)):
                     del self.Gateways[target][act]
 
         for n in list(self.Vi.keys()):
@@ -369,6 +376,8 @@ class Parrod():
         chirp["Value"] = 1.0
         chirp["HopCount"] = self.maxHops
 
+        # Delete hop entry again for compability
+        del chirp["Hop"]
         self.udp.broadcastData(self.mhChirp.serialize(chirp))
 
     def getNextSquNr(self) -> int:
