@@ -8,30 +8,28 @@ class MultiHopChirp(RoutingMessage):
         Format:
 
         Origin - Ipv4 - Int
-        Hop - Ipv4 - Int
         SquNr - Unsigned Int - Unsigned Int
 
         Position:
-        X - Double - Float
-        Y - Double - Float
-        Z - Double - Float
-        Vx - Double - Float
-        Vy - Double - Float
-        Vz - Double - Float
+        X - Float
+        Y - Float
+        Z - Float
+        Vx - Float
+        Vy - Float
+        Vz - Float
 
-        GammaMob - Double - Float
-        Value - Double - Float
-        HopCount - Integer - Int
+        GammaMob - Float
+        Value - Float
+        HopCount - Int
 
-        @IIIddddddddI
+        =IHffffffffH
         '''
-        fmt = "@IIIddddddddI"
+        fmt = "=IHffffffffH"
         super(MultiHopChirp, self).__init__(fmt)
 
     def serialize(self, data: dict) -> bytearray:
         values = (
             data["Origin"],
-            data["Hop"],
             data["SquNr"],
             data["X"],
             data["Y"],
@@ -46,10 +44,9 @@ class MultiHopChirp(RoutingMessage):
         return struct.pack(self.fmt, *values)
 
     def deserialize(self, data: bytearray) -> dict:
-        Origin, Hop, SquNr, X, Y, Z, Vx, Vy, Vz, GammaMob, Value, HopCount = struct.unpack(self.fmt, data)
+        Origin, SquNr, X, Y, Z, Vx, Vy, Vz, GammaMob, Value, HopCount = struct.unpack(self.fmt, data)
         return {
             "Origin": Origin,
-            "Hop": Hop,
             "SquNr": SquNr,
             "X": X,
             "Y": Y,
@@ -63,12 +60,11 @@ class MultiHopChirp(RoutingMessage):
         }
 
     def length(self) -> int:
-        return 84
+        return 40
 
 if __name__ == "__main__":
     testDict = {
         "Origin": 2130706433,
-        "Hop": 2130706433,
         "SquNr": 1337,
         "X": 500.0,
         "Y": 500.0,
@@ -85,3 +81,4 @@ if __name__ == "__main__":
     ser = MH.serialize(testDict)
     print(len(ser))
     deser = MH.deserialize(ser)
+    print(deser)
