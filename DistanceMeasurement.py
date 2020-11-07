@@ -8,6 +8,7 @@ import gpsd
 import datetime
 import subprocess
 import re
+import threading
 
 ref_OHParkpplatz = {
     "lat": 51.49051416,
@@ -42,61 +43,71 @@ ARP = {
 def Station(ref: dict, file: str, iface: str, mac: str):
     gpsd.connect()
     response = gpsd.get_current()
-    t_obj = datetime.datetime.strptime(response.time, '%Y-%m-%dT%H:%M:%S.%f%z')
+    t_obj = response.get_time()
     t0 = t_obj.hour * 3600 + t_obj.minute * 60 + t_obj.second
     p0 = np.array(ecefToEnu(*geodeticToEcef(response.lat, response.lon, response.alt), ref["lat"], ref["lon"], ref["alt"]))
     print("Starting over with p0 = ", p0, " at t: ", t0)
     if file != "":
         f = open(file, "a")
-        f.write('t,d\n')
+        f.write('t,d,rssi_min,rssi_avg,rssi_max,nof_packets\n')
         f.close()
     receptions = []
-    def getReceived(data: bytearray):
+    def getReceived(data: bytearray, addr):
         recvPos = np.array(struct.unpack("dddd", data))
         t_r = recvPos[0]
         d = np.linalg.norm(recvPos[1:] - p0)
-        print(f'{t_r - t0} {d} {traceRSSI()}')
-        receptions.append((t_r - t0, d, traceRSSI()))
+        receptions.append((t_r - t0, d))
+        fillRSSI()
 
-    def traceRSSI() -> float:
+    def traceRSSI():
         e = subprocess.Popen(f"iw dev {iface} station get {mac}".split(' '), stdout=subprocess.PIPE)
         out, _ = e.communicate()
         regex = 'signal:\s*(\-[0-9]+)'
         rssi = float(re.split(regex, out.decode('utf-8'))[1])
         return rssi
 
+    RSSIList = []
+    def fillRSSI():
+        RSSIList.append(traceRSSI())
 
-    udp = UDPManager(1801, "20.0.0.255", 1460)
+    #udp = UDPManager(1801, "20.0.0.255", 1460)
+    udp = UDPManager(1801, "127.0.0.255", 1460)
     udp.subscribe(getReceived)
     udp.listen()
 
     while True:
         time.sleep(1.0)
         rec_cp = receptions.copy()
+        rssis = RSSIList.copy()
         receptions.clear()
+        RSSIList.clear()
+        if len(rec_cp) == 0:
+            continue
+        dist_mean = np.mean(np.array(rec_cp), axis=0)
         if file != "":
             f = open(file, "a")
-            for t in rec_cp:
-                f.write(f'{t[0]},{t[1]},{t[2]}\n')
+            f.write(f'{rec_cp[0][0]},{dist_mean[1]},{min(rssis)},{np.mean(rssis)},{max(rssis)},{len(rssis)}\n')
             f.close()
+            print(f'{rec_cp[0][0]}:\t{dist_mean[1]}\t[{min(rssis)},{np.mean(rssis)},{max(rssis)}]\t- {len(rssis)}\n')
 
 
 def Mobile(ref: dict, t_sampling: float):
     gpsd.connect()
-    udp = UDPManager(1801, "20.0.0.255", 1460)
+    udp = UDPManager(1801, "127.0.0.255", 1460)
+    #udp = UDPManager(1801, "20.0.0.255", 1460)
 
     while True:
         response = gpsd.get_current()
         print(response.time)
         if response.time == "":
             # Safety measure to prevent Exception
+            time.sleep(float(t_sampling))
             continue
-        t_obj = datetime.datetime.strptime(response.time, '%Y-%m-%dT%H:%M:%S.%f%z')
+        t_obj = response.get_time()
         t = t_obj.hour*3600 + t_obj.minute*60 + t_obj.second
         p = np.array(ecefToEnu(*geodeticToEcef(response.lat, response.lon, response.alt), ref["lat"], ref["lon"], ref["alt"]))
-        for i in range(int(1.0/t_sampling)):
-            udp.broadcastData(struct.pack("dddd", t, *p))
-            time.sleep(float(t_sampling))
+        udp.broadcastData(struct.pack("dddd", t, *p))
+        time.sleep(float(t_sampling))
 
 
 if __name__ == "__main__":
