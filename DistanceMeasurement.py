@@ -70,8 +70,7 @@ def Station(ref: dict, file: str, iface: str, mac: str):
     def fillRSSI():
         RSSIList.append(traceRSSI())
 
-    #udp = UDPManager(1801, "20.0.0.255", 1460)
-    udp = UDPManager(1801, "127.0.0.255", 1460)
+    udp = UDPManager(1801, "20.0.0.255", 1460)
     udp.subscribe(getReceived)
     udp.listen()
 
@@ -93,8 +92,7 @@ def Station(ref: dict, file: str, iface: str, mac: str):
 
 def Mobile(ref: dict, t_sampling: float):
     gpsd.connect()
-    udp = UDPManager(1801, "127.0.0.255", 1460)
-    #udp = UDPManager(1801, "20.0.0.255", 1460)
+    udp = UDPManager(1801, "20.0.0.255", 1460)
 
     while True:
         response = gpsd.get_current()
