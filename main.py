@@ -4,7 +4,7 @@ import time
 import subprocess
 import argparse
 
-TRANSMISSION_RANGE = 80.0
+TRANSMISSION_RANGE = 25.0
 
 ref_OHParkpplatz = {
         "lat": 51.49051416,
@@ -43,8 +43,8 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
     # Parrod config
     config["mhChirpInterval"] = 1.0
     config["neighborReliabilityTimeout"] = 2.0
-    config["qFctAlpha"] = 0.4
-    config["qFctGamma"] = 0.9
+    config["qFctAlpha"] = 0.5
+    config["qFctGamma"] = 0.8
     config["maxHops"] = 32
     config["historySize"] = 5
     config["rescheduleRoutesOnTimeout"] = False

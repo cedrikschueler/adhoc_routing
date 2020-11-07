@@ -65,7 +65,7 @@ class Parrod():
     def start(self):
         self.t0 = time.time()
         if self.verbose:
-            print(f'{(time.time() - self.t0):.3f}: [PARROD] Starting Services')
+            print(f'{(time.time() - self.t0):.3f}: [PARRoT] Starting Services')
         self.rt.invalidateRoutingTable(self.coordinatorAddress)
         self.udp.listen()
         self.running = True
@@ -82,7 +82,7 @@ class Parrod():
         self.udp.terminate()
         self.running = False
         if self.verbose:
-            print(f'{(time.time() - self.t0):.3f}: [PARROD] Parrod Terminated')
+            print(f'{(time.time() - self.t0):.3f}: [PARRoT] PARRoT Terminated')
     '''
     Brain functions
     '''
@@ -185,7 +185,7 @@ class Parrod():
             msgData["Hop"] = Ipv4ToInt(addr[0])
             remainingHops = self.handleIncomingMultiHopChirp(msgData)
             if self.verbose and msgData["Origin"] != self.ipAddress and msgData["Hop"] != self.ipAddress:
-                print(f'{(time.time() - self.t0):.3f}: [PARROD] Received MSG from {intToIpv4(msgData["Origin"])} via {intToIpv4(msgData["Hop"])} with V: {msgData["Value"]}')
+                print(f'{(time.time() - self.t0):.3f}: [PARRoT] Received MSG from {intToIpv4(msgData["Origin"])} via {intToIpv4(msgData["Hop"])} with V: {msgData["Value"]}')
 
             if remainingHops > 0 and self.postliminaryChecksPassed(msgData["Origin"], msgData["Hop"]):
                 msgData["Value"] = self.getMaxValueFor(msgData["Origin"])
@@ -207,7 +207,7 @@ class Parrod():
                 msgData["GammaMob"] = self.m_Gamma_Mob
                 msgData["HopCount"] = remainingHops
                 if self.verbose:
-                    print(f'{(time.time() - self.t0):.3f}: [PARROD] Forwarding MSG from {intToIpv4(msgData["Origin"])} with {remainingHops} remaining hops')
+                    print(f'{(time.time() - self.t0):.3f}: [PARRoT] Forwarding MSG from {intToIpv4(msgData["Origin"])} with {remainingHops} remaining hops')
 
                 # Delete hop entry again for compability
                 del msgData["Hop"]
