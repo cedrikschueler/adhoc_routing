@@ -10,7 +10,7 @@ The usage of json-formatted setup is recommended. This way you can easily extend
 
 `sudo` privileges are required to allow the routing table module to write and delete IP table entries.
 #### Provided MANET Routing Protocols
-- [x] Parrod (own implementation)
+- [x] PARRoT (own implementation)
 #### Possible Additions
 - [ ] DSDV
 
