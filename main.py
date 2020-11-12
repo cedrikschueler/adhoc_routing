@@ -1,4 +1,4 @@
-from Routing.Parrod import Parrod
+from Routing.PARRoT import PARRoT
 from Traffic.TrafficGenerator import TrafficGenerator, TrafficReceiver
 import time
 import subprocess
@@ -6,28 +6,10 @@ import argparse
 
 TRANSMISSION_RANGE = 25.0
 
-ref_OHParkpplatz = {
-        "lat": 51.49051416,
-        "lon": 7.41436899,
-        "alt": 106.6
-    }
-
 ref_KoelnerDom = {
     "lat": 51.49150,
     "lon": 7.41340,
     "alt": 60.0
-}
-
-ref_Giesbertpark = {
-    "lat": 50.96362,
-    "lon": 6.96375,
-    "alt": 50.0
-}
-
-ref_Sportplatz = {
-    "lat": 51.31901,
-    "lon": 7.99801,
-    "alt": 280.0
 }
 
 def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0, verbose: bool = False, name: str = ""):
@@ -65,7 +47,7 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
 
     # GNSS Configuration
     config["gnssUpdateInterval"] = 1.0
-    config["gpsReferencePoint"] = ref_Giesbertpark
+    config["gpsReferencePoint"] = ref_KoelnerDom
 
     '''
     Traffic Generator is disabled!
@@ -82,7 +64,7 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
         "Filename": f'{config["experimentName"]}_eval.csv'
     }
     '''
-    routingProtocol = Parrod(config, TRANSMISSION_RANGE)
+    routingProtocol = PARRoT(config, TRANSMISSION_RANGE)
 
     '''
     Traffic Generator is disabled!
@@ -121,7 +103,7 @@ def Experiment(timeLimit: float=120.0, waitTimeBeforeStart=0.0, trafficDelay=0.0
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Parrod')
+    parser = argparse.ArgumentParser(description='PARRoT')
     parser.add_argument('-n', dest='name', type=str, help='Specify a name for this experiment.', required=True)
     parser.add_argument('-v', dest='verbose', type=bool, help='Print outputs', default=True)
     args = parser.parse_args()

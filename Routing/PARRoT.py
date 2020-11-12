@@ -23,7 +23,7 @@ def intToIpv4(inp: int) -> str:
 def Ipv4ToInt(inp: str) -> int:
     return int(ip.IPv4Address(inp))
 
-class Parrod():
+class PARRoT():
 
     __squNr: int = 0
     Vi: dict = dict()
