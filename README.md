@@ -26,5 +26,21 @@ Created during my master thesis at [Communication Networks Institute (CNI)](http
 >Design and Performance Evaluation of a Reinforcement Learning-Based
 Mobile Ad-hoc Network Routing Protocol
 
+If you use this in your research, please cite the following:
+```
+@InProceedings{Sliwa2021parrot,
+	Author = {Benjamin Sliwa and Cedrik Schüler and Manuel Patchou and Christian Wietfeld},
+	Title = {{PARRoT}: {Predictive} ad-hoc routing fueled by reinforcement learning and trajectory knowledge},
+	Booktitle = {2021 IEEE 93rd Vehicular Technology Conference (VTC-Spring)},
+	Year = {2021},
+	Publishingstatus = {accepted for presentation},
+	Address = {Helsinki, Finland},
+	Month = apr,
+	Eprint = {2012.05490},
+	Eprinttype = {arxiv},
+	Cnidoc = {1607585431},
+	Project = {A-DRZ, SFB876-A4, SFB876-B4}
+}
+```
 
 (c) Cedrik Schüler, 2020
